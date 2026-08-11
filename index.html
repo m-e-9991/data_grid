@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Data Grid</title>
+    </head>
+    <body>
+        <div id="grid-container"></div>
+        <script type="module" src="main.js"></script>
+        <script>
+            import {} from "main.js";
+
+            const container = document.getElementById("grid-container");
+            
+            async function loadConfig() {
+                try {
+                    const response = await fetch("./config.json");
+                    return await response.json();
+                } catch (error) {
+                    return error.message;
+                }
+            }
+
+            async function loadData() {
+                try {
+                    const response = await fetch("./data.json");
+                    return await response.json();
+                } catch (error) {
+                    return error.message;
+                }
+            }
+
+        </script>
+    </body>
+</html>

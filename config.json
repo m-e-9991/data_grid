@@ -1,0 +1,94 @@
+{
+    "tableName": "mainTable",
+    "tableLabel": "Main Table",
+    "readOnly": false,
+    "columns": [
+        {
+            "columnName": "text",
+            "columnLabel": "Text",
+            "columnType": "text"
+        },
+        {
+            "columnName": "date",
+            "columnLabel": "Date",
+            "columnType": "date",
+            "default": "today"
+        },
+        {
+            "columnName": "decimal",
+            "columnLabel": "Decimal",
+            "columnType": "decimal",
+            "min": 0
+        },
+        {
+            "columnName": "integer",
+            "columnLabel": "Integer",
+            "columnType": "integer",
+            "min": -5,
+            "max": 5
+        },
+        {
+            "columnName": "select",
+            "columnLabel": "Select",
+            "columnType": "select",
+            "optionType": "text",
+            "optionList": [
+                {
+                    "optionValue": "1",
+                    "optionLabel": "Option 1"
+                },
+                {
+                    "optionValue": "2",
+                    "optionLabel": "Option 2"
+                },
+                {
+                    "optionValue": "3",
+                    "optionLabel": "Option 3"
+                }
+            ]
+        },
+        {
+            "columnName": "multiSelect",
+            "columnLabel": "Multi-Select",
+            "columnType": "multiSelect",
+            "optionType": "text",
+            "optionList": [
+                {
+                    "optionValue": "1",
+                    "optionLabel": "Option 1"
+                },
+                {
+                    "optionValue": "2",
+                    "optionLabel": "Option 2"
+                },
+                {
+                    "optionValue": "3",
+                    "optionLabel": "Option 3"
+                }
+            ]
+        },
+        {
+            "columnName": "boolean",
+            "columnLabel": "Boolean",
+            "columnType": "boolean"
+        },
+        {
+            "columnName": "hiddenColumn",
+            "columnLabel": "Hidden Column",
+            "columnType": "text",
+            "hidden": true
+        },
+        {
+            "columnName": "unsearchableColumn",
+            "columnLabel": "Unsearchable Column",
+            "columnType": "text",
+            "searchable": false
+        },
+        {
+            "columnName": "uneditableColumn",
+            "columnLabel": "Uneditable Column",
+            "columnType": "text",
+            "readOnly": true
+        }
+    ]
+}

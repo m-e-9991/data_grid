@@ -4,6 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Data Grid</title>
+        <link rel="stylesheet" href="style.css" />
     </head>
     <body>
         <div id="grid-container"></div>
@@ -29,6 +30,14 @@
                     return error.message;
                 }
             }
+
+            const config = await loadConfig();
+            const data = await loadData();
+            const dataGrid = new DataGrid({
+                container,
+                config,
+                data
+            });
         </script>
     </body>
 </html>

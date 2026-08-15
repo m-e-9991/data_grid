@@ -1,0 +1,923 @@
+[
+    {
+        "id": 1,
+        "text": "Row 1 text",
+        "date": "2025-10-16",
+        "decimal": 22.27,
+        "integer": -2,
+        "select": "1",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 1",
+        "unsearchableColumn": "unsearchable 1",
+        "uneditableColumn": "locked 1"
+    },
+    {
+        "id": 2,
+        "text": "Row 2 text",
+        "date": "2025-11-23",
+        "decimal": 0,
+        "integer": 4,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 2",
+        "unsearchableColumn": "unsearchable 2",
+        "uneditableColumn": "locked 2"
+    },
+    {
+        "id": 3,
+        "text": "Row 3 text",
+        "date": "2024-04-05",
+        "decimal": 0,
+        "integer": 3,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "2",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 3",
+        "unsearchableColumn": "unsearchable 3",
+        "uneditableColumn": "locked 3"
+    },
+    {
+        "id": 4,
+        "text": "Row 4 text",
+        "date": "2026-02-16",
+        "decimal": 161.16,
+        "integer": 0,
+        "select": "2",
+        "multiSelect": [
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 4",
+        "unsearchableColumn": "unsearchable 4",
+        "uneditableColumn": "locked 4"
+    },
+    {
+        "id": 5,
+        "text": "Row 5 text",
+        "date": "2024-04-14",
+        "decimal": 0,
+        "integer": 0,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "2"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 5",
+        "unsearchableColumn": "unsearchable 5",
+        "uneditableColumn": "locked 5"
+    },
+    {
+        "id": 6,
+        "text": "Row 6 text",
+        "date": "2025-01-22",
+        "decimal": 15.76,
+        "integer": 5,
+        "select": "3",
+        "multiSelect": [
+            "3",
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 6",
+        "unsearchableColumn": "unsearchable 6",
+        "uneditableColumn": "locked 6"
+    },
+    {
+        "id": 7,
+        "text": "Row 7 text",
+        "date": "2024-02-16",
+        "decimal": 132.25,
+        "integer": -4,
+        "select": "1",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 7",
+        "unsearchableColumn": "unsearchable 7",
+        "uneditableColumn": "locked 7"
+    },
+    {
+        "id": 8,
+        "text": "Row 8 text",
+        "date": "2024-10-11",
+        "decimal": 90.68,
+        "integer": -3,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "2"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 8",
+        "unsearchableColumn": "unsearchable 8",
+        "uneditableColumn": "locked 8"
+    },
+    {
+        "id": 9,
+        "text": "Row 9 text",
+        "date": "2025-09-15",
+        "decimal": 0,
+        "integer": -3,
+        "select": "2",
+        "multiSelect": [
+            "2",
+            "1",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 9",
+        "unsearchableColumn": "unsearchable 9",
+        "uneditableColumn": "locked 9"
+    },
+    {
+        "id": 10,
+        "text": "Row 10 text",
+        "date": "2024-08-22",
+        "decimal": 164.36,
+        "integer": 1,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 10",
+        "unsearchableColumn": "unsearchable 10",
+        "uneditableColumn": "locked 10"
+    },
+    {
+        "id": 11,
+        "text": "Row 11 text",
+        "date": "2025-08-03",
+        "decimal": 175.27,
+        "integer": -2,
+        "select": "3",
+        "multiSelect": [
+            "2",
+            "3",
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 11",
+        "unsearchableColumn": "unsearchable 11",
+        "uneditableColumn": "locked 11"
+    },
+    {
+        "id": 12,
+        "text": "Row 12 text",
+        "date": "2024-05-22",
+        "decimal": 49.33,
+        "integer": 4,
+        "select": "2",
+        "multiSelect": [
+            "2",
+            "1",
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 12",
+        "unsearchableColumn": "unsearchable 12",
+        "uneditableColumn": "locked 12"
+    },
+    {
+        "id": 13,
+        "text": "Row 13 text",
+        "date": "2024-04-03",
+        "decimal": 0,
+        "integer": -3,
+        "select": "3",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 13",
+        "unsearchableColumn": "unsearchable 13",
+        "uneditableColumn": "locked 13"
+    },
+    {
+        "id": 14,
+        "text": "Row 14 text",
+        "date": "2025-09-02",
+        "decimal": 12.71,
+        "integer": 4,
+        "select": "2",
+        "multiSelect": [
+            "3",
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 14",
+        "unsearchableColumn": "unsearchable 14",
+        "uneditableColumn": "locked 14"
+    },
+    {
+        "id": 15,
+        "text": "Row 15 text",
+        "date": "2025-11-29",
+        "decimal": 176.96,
+        "integer": 5,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 15",
+        "unsearchableColumn": "unsearchable 15",
+        "uneditableColumn": "locked 15"
+    },
+    {
+        "id": 16,
+        "text": "Row 16 text",
+        "date": "2025-03-21",
+        "decimal": 0,
+        "integer": -1,
+        "select": "3",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 16",
+        "unsearchableColumn": "unsearchable 16",
+        "uneditableColumn": "locked 16"
+    },
+    {
+        "id": 17,
+        "text": "Row 17 text",
+        "date": "2026-06-10",
+        "decimal": 0,
+        "integer": -3,
+        "select": "2",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 17",
+        "unsearchableColumn": "unsearchable 17",
+        "uneditableColumn": "locked 17"
+    },
+    {
+        "id": 18,
+        "text": "Row 18 text",
+        "date": "2025-09-05",
+        "decimal": 0,
+        "integer": -4,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 18",
+        "unsearchableColumn": "unsearchable 18",
+        "uneditableColumn": "locked 18"
+    },
+    {
+        "id": 19,
+        "text": "Row 19 text",
+        "date": "2026-06-18",
+        "decimal": 0,
+        "integer": -4,
+        "select": "3",
+        "multiSelect": [
+            "1",
+            "3",
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 19",
+        "unsearchableColumn": "unsearchable 19",
+        "uneditableColumn": "locked 19"
+    },
+    {
+        "id": 20,
+        "text": "Row 20 text",
+        "date": "2025-07-16",
+        "decimal": 33.03,
+        "integer": -2,
+        "select": "3",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 20",
+        "unsearchableColumn": "unsearchable 20",
+        "uneditableColumn": "locked 20"
+    },
+    {
+        "id": 21,
+        "text": "Row 21 text",
+        "date": "2025-02-12",
+        "decimal": 199.03,
+        "integer": 2,
+        "select": "3",
+        "multiSelect": [
+            "1",
+            "3",
+            "2"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 21",
+        "unsearchableColumn": "unsearchable 21",
+        "uneditableColumn": "locked 21"
+    },
+    {
+        "id": 22,
+        "text": "Row 22 text",
+        "date": "2024-12-12",
+        "decimal": 0,
+        "integer": 4,
+        "select": "1",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 22",
+        "unsearchableColumn": "unsearchable 22",
+        "uneditableColumn": "locked 22"
+    },
+    {
+        "id": 23,
+        "text": "Row 23 text",
+        "date": "2025-12-25",
+        "decimal": 0,
+        "integer": -4,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 23",
+        "unsearchableColumn": "unsearchable 23",
+        "uneditableColumn": "locked 23"
+    },
+    {
+        "id": 24,
+        "text": "Row 24 text",
+        "date": "2025-11-16",
+        "decimal": 0,
+        "integer": 4,
+        "select": "3",
+        "multiSelect": [
+            "1",
+            "2",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 24",
+        "unsearchableColumn": "unsearchable 24",
+        "uneditableColumn": "locked 24"
+    },
+    {
+        "id": 25,
+        "text": "Row 25 text",
+        "date": "2024-04-06",
+        "decimal": 19.39,
+        "integer": 0,
+        "select": "2",
+        "multiSelect": [
+            "2",
+            "1",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 25",
+        "unsearchableColumn": "unsearchable 25",
+        "uneditableColumn": "locked 25"
+    },
+    {
+        "id": 26,
+        "text": "Row 26 text",
+        "date": "2025-02-16",
+        "decimal": 0,
+        "integer": -2,
+        "select": "1",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 26",
+        "unsearchableColumn": "unsearchable 26",
+        "uneditableColumn": "locked 26"
+    },
+    {
+        "id": 27,
+        "text": "Row 27 text",
+        "date": "2024-05-23",
+        "decimal": 84.38,
+        "integer": 2,
+        "select": "1",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 27",
+        "unsearchableColumn": "unsearchable 27",
+        "uneditableColumn": "locked 27"
+    },
+    {
+        "id": 28,
+        "text": "Row 28 text",
+        "date": "2026-04-07",
+        "decimal": 0,
+        "integer": -5,
+        "select": "3",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 28",
+        "unsearchableColumn": "unsearchable 28",
+        "uneditableColumn": "locked 28"
+    },
+    {
+        "id": 29,
+        "text": "Row 29 text",
+        "date": "2026-02-10",
+        "decimal": 0,
+        "integer": 1,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "2",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 29",
+        "unsearchableColumn": "unsearchable 29",
+        "uneditableColumn": "locked 29"
+    },
+    {
+        "id": 30,
+        "text": "Row 30 text",
+        "date": "2025-01-23",
+        "decimal": 0.43,
+        "integer": -1,
+        "select": "2",
+        "multiSelect": [
+            "2",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 30",
+        "unsearchableColumn": "unsearchable 30",
+        "uneditableColumn": "locked 30"
+    },
+    {
+        "id": 31,
+        "text": "Row 31 text",
+        "date": "2024-07-13",
+        "decimal": 0,
+        "integer": 4,
+        "select": "3",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 31",
+        "unsearchableColumn": "unsearchable 31",
+        "uneditableColumn": "locked 31"
+    },
+    {
+        "id": 32,
+        "text": "Row 32 text",
+        "date": "2024-02-28",
+        "decimal": 10.03,
+        "integer": 3,
+        "select": "3",
+        "multiSelect": [
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 32",
+        "unsearchableColumn": "unsearchable 32",
+        "uneditableColumn": "locked 32"
+    },
+    {
+        "id": 33,
+        "text": "Row 33 text",
+        "date": "2026-05-21",
+        "decimal": 0,
+        "integer": 5,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "3",
+            "2"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 33",
+        "unsearchableColumn": "unsearchable 33",
+        "uneditableColumn": "locked 33"
+    },
+    {
+        "id": 34,
+        "text": "Row 34 text",
+        "date": "2025-03-05",
+        "decimal": 131.47,
+        "integer": -1,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 34",
+        "unsearchableColumn": "unsearchable 34",
+        "uneditableColumn": "locked 34"
+    },
+    {
+        "id": 35,
+        "text": "Row 35 text",
+        "date": "2024-05-14",
+        "decimal": 134.34,
+        "integer": 2,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 35",
+        "unsearchableColumn": "unsearchable 35",
+        "uneditableColumn": "locked 35"
+    },
+    {
+        "id": 36,
+        "text": "Row 36 text",
+        "date": "2025-04-14",
+        "decimal": 0,
+        "integer": -4,
+        "select": "3",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 36",
+        "unsearchableColumn": "unsearchable 36",
+        "uneditableColumn": "locked 36"
+    },
+    {
+        "id": 37,
+        "text": "Row 37 text",
+        "date": "2024-05-15",
+        "decimal": 0,
+        "integer": -2,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 37",
+        "unsearchableColumn": "unsearchable 37",
+        "uneditableColumn": "locked 37"
+    },
+    {
+        "id": 38,
+        "text": "Row 38 text",
+        "date": "2025-09-18",
+        "decimal": 0,
+        "integer": 5,
+        "select": "3",
+        "multiSelect": [
+            "3",
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 38",
+        "unsearchableColumn": "unsearchable 38",
+        "uneditableColumn": "locked 38"
+    },
+    {
+        "id": 39,
+        "text": "Row 39 text",
+        "date": "2024-09-27",
+        "decimal": 0,
+        "integer": 3,
+        "select": "1",
+        "multiSelect": [
+            "2",
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 39",
+        "unsearchableColumn": "unsearchable 39",
+        "uneditableColumn": "locked 39"
+    },
+    {
+        "id": 40,
+        "text": "Row 40 text",
+        "date": "2024-07-27",
+        "decimal": 137.5,
+        "integer": 3,
+        "select": "2",
+        "multiSelect": [
+            "1",
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 40",
+        "unsearchableColumn": "unsearchable 40",
+        "uneditableColumn": "locked 40"
+    },
+    {
+        "id": 41,
+        "text": "Row 41 text",
+        "date": "2026-04-29",
+        "decimal": 0,
+        "integer": 0,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 41",
+        "unsearchableColumn": "unsearchable 41",
+        "uneditableColumn": "locked 41"
+    },
+    {
+        "id": 42,
+        "text": "Row 42 text",
+        "date": "2025-07-28",
+        "decimal": 0,
+        "integer": -3,
+        "select": "3",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 42",
+        "unsearchableColumn": "unsearchable 42",
+        "uneditableColumn": "locked 42"
+    },
+    {
+        "id": 43,
+        "text": "Row 43 text",
+        "date": "2025-08-19",
+        "decimal": 110.51,
+        "integer": -3,
+        "select": "1",
+        "multiSelect": [
+            "2",
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 43",
+        "unsearchableColumn": "unsearchable 43",
+        "uneditableColumn": "locked 43"
+    },
+    {
+        "id": 44,
+        "text": "Row 44 text",
+        "date": "2024-08-03",
+        "decimal": 0,
+        "integer": 0,
+        "select": "3",
+        "multiSelect": [
+            "3",
+            "1",
+            "2"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 44",
+        "unsearchableColumn": "unsearchable 44",
+        "uneditableColumn": "locked 44"
+    },
+    {
+        "id": 45,
+        "text": "Row 45 text",
+        "date": "2026-03-30",
+        "decimal": 162.15,
+        "integer": -5,
+        "select": "1",
+        "multiSelect": [
+            "2",
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 45",
+        "unsearchableColumn": "unsearchable 45",
+        "uneditableColumn": "locked 45"
+    },
+    {
+        "id": 46,
+        "text": "Row 46 text",
+        "date": "2024-06-12",
+        "decimal": 0,
+        "integer": 1,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "3",
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 46",
+        "unsearchableColumn": "unsearchable 46",
+        "uneditableColumn": "locked 46"
+    },
+    {
+        "id": 47,
+        "text": "Row 47 text",
+        "date": "2024-11-08",
+        "decimal": 0,
+        "integer": -2,
+        "select": "1",
+        "multiSelect": [
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 47",
+        "unsearchableColumn": "unsearchable 47",
+        "uneditableColumn": "locked 47"
+    },
+    {
+        "id": 48,
+        "text": "Row 48 text",
+        "date": "2024-10-12",
+        "decimal": 172.87,
+        "integer": 0,
+        "select": "3",
+        "multiSelect": [
+            "3",
+            "2",
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 48",
+        "unsearchableColumn": "unsearchable 48",
+        "uneditableColumn": "locked 48"
+    },
+    {
+        "id": 49,
+        "text": "Row 49 text",
+        "date": "2026-06-17",
+        "decimal": 0,
+        "integer": 4,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": true,
+        "hiddenColumn": "hidden 49",
+        "unsearchableColumn": "unsearchable 49",
+        "uneditableColumn": "locked 49"
+    },
+    {
+        "id": 50,
+        "text": "Row 50 text",
+        "date": "2025-09-02",
+        "decimal": 86.91,
+        "integer": 1,
+        "select": "3",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 50",
+        "unsearchableColumn": "unsearchable 50",
+        "uneditableColumn": "locked 50"
+    },
+    {
+        "id": 51,
+        "text": "Row 51 text",
+        "date": "2025-08-13",
+        "decimal": 0,
+        "integer": 1,
+        "select": "1",
+        "multiSelect": [
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 51",
+        "unsearchableColumn": "unsearchable 51",
+        "uneditableColumn": "locked 51"
+    },
+    {
+        "id": 52,
+        "text": "Row 52 text",
+        "date": "2024-03-12",
+        "decimal": 189.77,
+        "integer": 4,
+        "select": "2",
+        "multiSelect": [],
+        "boolean": false,
+        "hiddenColumn": "hidden 52",
+        "unsearchableColumn": "unsearchable 52",
+        "uneditableColumn": "locked 52"
+    },
+    {
+        "id": 53,
+        "text": "Row 53 text",
+        "date": "2025-06-03",
+        "decimal": 61.86,
+        "integer": 0,
+        "select": "2",
+        "multiSelect": [
+            "3",
+            "1"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 53",
+        "unsearchableColumn": "unsearchable 53",
+        "uneditableColumn": "locked 53"
+    },
+    {
+        "id": 54,
+        "text": "Row 54 text",
+        "date": "2025-03-06",
+        "decimal": 132.99,
+        "integer": 5,
+        "select": "3",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 54",
+        "unsearchableColumn": "unsearchable 54",
+        "uneditableColumn": "locked 54"
+    },
+    {
+        "id": 55,
+        "text": "Row 55 text",
+        "date": "2025-02-19",
+        "decimal": 0,
+        "integer": -1,
+        "select": "2",
+        "multiSelect": [
+            "2"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 55",
+        "unsearchableColumn": "unsearchable 55",
+        "uneditableColumn": "locked 55"
+    },
+    {
+        "id": 56,
+        "text": "Row 56 text",
+        "date": "2025-04-21",
+        "decimal": 0,
+        "integer": 3,
+        "select": "2",
+        "multiSelect": [
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 56",
+        "unsearchableColumn": "unsearchable 56",
+        "uneditableColumn": "locked 56"
+    },
+    {
+        "id": 57,
+        "text": "Row 57 text",
+        "date": "2024-10-17",
+        "decimal": 103.09,
+        "integer": -4,
+        "select": "1",
+        "multiSelect": [
+            "1",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "hidden 57",
+        "unsearchableColumn": "unsearchable 57",
+        "uneditableColumn": "locked 57"
+    },
+    {
+        "id": 58,
+        "text": "Row 58 text",
+        "date": "2024-01-26",
+        "decimal": 9.24,
+        "integer": 4,
+        "select": "1",
+        "multiSelect": [
+            "2",
+            "1",
+            "3"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 58",
+        "unsearchableColumn": "unsearchable 58",
+        "uneditableColumn": "locked 58"
+    },
+    {
+        "id": 59,
+        "text": "Row 59 text",
+        "date": "2025-02-13",
+        "decimal": 0,
+        "integer": -4,
+        "select": "2",
+        "multiSelect": [
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 59",
+        "unsearchableColumn": "unsearchable 59",
+        "uneditableColumn": "locked 59"
+    },
+    {
+        "id": 60,
+        "text": "Row 60 text",
+        "date": "2024-02-21",
+        "decimal": 0,
+        "integer": 2,
+        "select": "1",
+        "multiSelect": [
+            "3",
+            "2",
+            "1"
+        ],
+        "boolean": false,
+        "hiddenColumn": "hidden 60",
+        "unsearchableColumn": "unsearchable 60",
+        "uneditableColumn": "locked 60"
+    }
+]

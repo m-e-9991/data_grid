@@ -35,15 +35,18 @@
             "optionList": [
                 {
                     "optionValue": "1",
-                    "optionLabel": "Option 1"
+                    "optionLabel": "Option 1",
+                    "optionIndex": 1
                 },
                 {
                     "optionValue": "2",
-                    "optionLabel": "Option 2"
+                    "optionLabel": "Option 2",
+                    "optionIndex": 2
                 },
                 {
                     "optionValue": "3",
-                    "optionLabel": "Option 3"
+                    "optionLabel": "Option 3",
+                    "optionIndex": 3
                 }
             ]
         },
@@ -55,15 +58,18 @@
             "optionList": [
                 {
                     "optionValue": "1",
-                    "optionLabel": "Option 1"
+                    "optionLabel": "Option 1",
+                    "optionIndex": 1
                 },
                 {
                     "optionValue": "2",
-                    "optionLabel": "Option 2"
+                    "optionLabel": "Option 2",
+                    "optionIndex": 2
                 },
                 {
                     "optionValue": "3",
-                    "optionLabel": "Option 3"
+                    "optionLabel": "Option 3",
+                    "optionIndex": 3
                 }
             ]
         },

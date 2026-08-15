@@ -4,8 +4,8 @@ export class DataGrid {
     #index;
     #size;
     #rows = [];
-    #state;
     #table;
+    #sortState;
 
     constructor({ container, config, data = [], index = 0, size = 50 } = {}) {
         this.#container = container;
@@ -13,7 +13,7 @@ export class DataGrid {
         this.#index = index;
         this.#size = size;
         this.extractRows(data);
-        this.#table = new Table(this.#config);
+        this.#table = new Table(this.#config, this);
         this.render();
     }
 
@@ -31,13 +31,23 @@ export class DataGrid {
 
         table.append(thead);
 
-        for (
-            let i = this.#index * this.#size;
-            i < (this.#index + 1) * this.#size;
-            ++i
-        ) {
-            if (i >= this.#rows.length) break;
-            const r = this.#rows[i];
+        let renderedData = [...this.#rows];
+
+        if (this.#sortState !== null && this.#sortState !== undefined) {
+            const sortColumn = this.#table.getColumn(
+                this.#sortState.columnName,
+            );
+            renderedData.sort((a, b) => {
+                let sign = this.#sortState.direction === "asc" ? 1 : -1;
+                return sign * sortColumn.compareValues(a, b);
+            });
+        }
+
+        const start = this.#index * this.#size;
+        const end = (this.#index + 1) * this.#size;
+        for (let i = start; i < end; ++i) {
+            if (i >= renderedData.length) break;
+            const r = renderedData[i];
             const tr = document.createElement("tr");
             for (let c of this.#table.columns) {
                 const td = c.renderCell(r.getField(c.name));
@@ -58,21 +68,32 @@ export class DataGrid {
         }
 
         for (let row of data) {
-            if (row.id === null) {
+            if (row.id === undefined) {
                 throw new Error("Data rows have no id's.");
             }
             this.#rows.push(new DataRow(row));
         }
     }
+
+    setSortState(sortState) {
+        this.#sortState = sortState;
+        this.render();
+    }
+
+    get sortState() {
+        return this.#sortState;
+    }
 }
 
 class Table {
+    #grid;
     #name;
     #label;
     #readonly;
     #columns = [];
 
-    constructor(config) {
+    constructor(config, grid) {
+        this.#grid = grid;
         this.#name = config.tableName;
         this.#label = config.tableLabel;
         this.#readonly = config.readOnly || false;
@@ -85,25 +106,25 @@ class Table {
     columnFactory(columnConfig) {
         switch (columnConfig.columnType) {
             case "text": {
-                return new TextColumn(columnConfig);
+                return new TextColumn(columnConfig, this.#grid);
             }
             case "date": {
-                return new DateColumn(columnConfig);
+                return new DateColumn(columnConfig, this.#grid);
             }
             case "decimal": {
-                return new DecimalColumn(columnConfig);
+                return new DecimalColumn(columnConfig, this.#grid);
             }
             case "integer": {
-                return new IntegerColumn(columnConfig);
+                return new IntegerColumn(columnConfig, this.#grid);
             }
             case "select": {
-                return new SelectColumn(columnConfig);
+                return new SelectColumn(columnConfig, this.#grid);
             }
             case "multiSelect": {
-                return new MultiSelectColumn(columnConfig);
+                return new MultiSelectColumn(columnConfig, this.#grid);
             }
             case "boolean": {
-                return new BooleanColumn(columnConfig);
+                return new BooleanColumn(columnConfig, this.#grid);
             }
             default: {
                 throw new Error("Wrong or missing column type");
@@ -114,9 +135,15 @@ class Table {
     get columns() {
         return this.#columns;
     }
+
+    getColumn(columnName) {
+        const column = this.#columns.find((c) => c.name === columnName);
+        return column;
+    }
 }
 
 class Column {
+    #grid;
     #name;
     #label;
     #type;
@@ -124,7 +151,8 @@ class Column {
     #searchable;
     #hidden;
 
-    constructor(columnConfig) {
+    constructor(columnConfig, grid) {
+        this.#grid = grid;
         this.#name = columnConfig.columnName;
         this.#label = columnConfig.columnLabel;
         this.#type = columnConfig.columnType;
@@ -159,29 +187,76 @@ class Column {
         }
         const th = document.createElement("th");
         th.append(this.#label);
+
+        const sort = document.createElement("button");
+        sort.classList.add("sort-button");
+        sort.type = "button";
+        const sortState = this.#grid.sortState;
+        if (
+            sortState !== null &&
+            sortState !== undefined &&
+            sortState.columnName === this.#name
+        ) {
+            sort.classList.add(sortState.direction);
+        }
+        sort.innerHTML = `<svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor"><polygon points="12 18 20 6 4 6"></polygon></svg>`;
+        sort.addEventListener("click", () => {
+            let state = { ...this.#grid.sortState };
+            if (state.columnName !== this.#name) {
+                state = { columnName: this.#name, direction: "asc" };
+            } else {
+                if (state.direction === "asc") state.direction = "desc";
+                else state = null;
+            }
+            this.#grid.setSortState(state);
+        });
+        th.append(sort);
+
         return th;
+    }
+
+    get cellClass() {
+        return "data-cell";
     }
 
     renderCell(value) {
         if (this.#hidden) return null;
         const td = document.createElement("td");
-        td.append(String(value));
+        td.className = this.cellClass;
         return td;
+    }
+
+    compareValues(a, b) {
+        return a.getField(this.name) - b.getField(this.name);
     }
 }
 
 class TextColumn extends Column {
-    constructor(columnConfig) {
-        super(columnConfig);
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
+    }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        td.append(String(value) || "");
+        return td;
+    }
+
+    compareValues(a, b) {
+        const as = a.getField(this.name);
+        const bs = b.getField(this.name);
+        return as.localeCompare(bs);
     }
 }
 
 class DateColumn extends Column {
     #default;
 
-    constructor(columnConfig) {
-        super(columnConfig);
-        this.#default = columnConfig.default || "today";
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
+        this.#default =
+            columnConfig.default === undefined ? "today" : columnConfig.default;
     }
 
     getDefaultDate() {
@@ -190,6 +265,19 @@ class DateColumn extends Column {
         }
         return new Date(this.#default);
     }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        td.append(String(value) || "");
+        return td;
+    }
+
+    compareValues(a, b) {
+        return (
+            new Date(a.getField(this.name)) - new Date(b.getField(this.name))
+        );
+    }
 }
 
 class DecimalColumn extends Column {
@@ -197,22 +285,29 @@ class DecimalColumn extends Column {
     #min;
     #max;
 
-    constructor(columnConfig) {
-        super(columnConfig);
-        this.#places = columnConfig.places || 2;
-        this.#min = columnConfig.min || null;
-        this.#max = columnConfig.max || null;
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
+        this.#places =
+            columnConfig.places === undefined ? 2 : columnConfig.places;
+        this.#min = columnConfig.min;
+        this.#max = columnConfig.max;
+    }
+
+    get cellClass() {
+        return "numeric-cell";
+    }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        td.append(value.toFixed(this.#places) || "");
+        return td;
     }
 }
 
-class IntegerColumn extends Column {
-    #min;
-    #max;
-
-    constructor(columnConfig) {
-        super(columnConfig);
-        this.#min = columnConfig.min || null;
-        this.#max = columnConfig.max || null;
+class IntegerColumn extends DecimalColumn {
+    constructor(columnConfig, grid) {
+        super({ ...columnConfig, places: 0 }, grid);
     }
 }
 
@@ -221,23 +316,114 @@ class SelectColumn extends Column {
     #optionEditable;
     #optionList = [];
 
-    constructor(columnConfig) {
-        super(columnConfig);
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
         this.#optionType = columnConfig.optionType;
         this.#optionEditable = columnConfig.optionEditable !== false;
         this.#optionList = columnConfig.optionList;
     }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        td.append(this.getOptionLabel(value));
+        return td;
+    }
+
+    get optionType() {
+        return this.#optionType;
+    }
+
+    get optionEditable() {
+        return this.#optionEditable;
+    }
+
+    get optionList() {
+        return this.#optionList;
+    }
+
+    getOptionLabel(value) {
+        const option = this.getOption(value);
+        if (option === undefined || option.optionLabel === undefined) return "";
+        return option.optionLabel;
+    }
+
+    getOption(value) {
+        return this.#optionList.find((o) => o.optionValue === value);
+    }
+
+    getOptionList(values) {
+        if (!Array.isArray(values)) return [];
+        const list = [];
+        for (let v of values) {
+            list.push(this.getOption(v));
+        }
+        return list;
+    }
+
+    compareValues(a, b) {
+        const ao = this.getOption(a.getField(this.name));
+        const bo = this.getOption(b.getField(this.name));
+        return ao.optionIndex - bo.optionIndex;
+    }
 }
 
 class MultiSelectColumn extends SelectColumn {
-    constructor(columnConfig) {
-        super(columnConfig);
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
+    }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        if (!Array.isArray(value)) return td;
+        const options = this.getOptionList(value);
+        options.sort((a, b) => a.optionIndex - b.optionIndex);
+        td.append(
+            options.reduce((s, o) => {
+                let l = this.getOptionLabel(o.optionValue);
+                if (s !== "" && l !== "") s += ", ";
+                s += l;
+                return s;
+            }, ""),
+        );
+        return td;
+    }
+
+    compareValues(a, b) {
+        const aol = this.getOptionList(a.getField(this.name));
+        aol.sort((aa, bb) => aa.optionIndex - bb.optionIndex);
+
+        const bol = this.getOptionList(b.getField(this.name));
+        bol.sort((aa, bb) => aa.optionIndex - bb.optionIndex);
+
+        if (aol.length !== bol.length) return aol.length - bol.length;
+
+        for (let i = 0; i < aol.length; ++i) {
+            if (aol[i].optionIndex === bol[i].optionIndex) continue;
+            return aol[i].optionIndex - bol[i].optionIndex;
+        }
+
+        return 0;
     }
 }
 
 class BooleanColumn extends Column {
-    constructor(columnConfig) {
-        super(columnConfig);
+    constructor(columnConfig, grid) {
+        super(columnConfig, grid);
+    }
+
+    renderCell(value) {
+        const td = super.renderCell(value);
+        if (td === null) return null;
+        const toggle = document.createElement("span");
+        toggle.className = "toggle";
+        toggle.classList.toggle("on", value);
+        const knob = document.createElement("span");
+        knob.className = "toggle-knob";
+        toggle.append(knob);
+        td.append(toggle);
+        return td;
     }
 }
 
@@ -256,7 +442,7 @@ class DataRow {
     }
 
     getField(column) {
-        if (this.#fields[column] === null) {
+        if (this.#fields[column] === undefined) {
             return "";
         }
         return this.#fields[column];

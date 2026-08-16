@@ -312,6 +312,27 @@ class Column {
             this.#grid.appendFilterConfig(this.name, this.filterConfig);
         });
         if (filterConfig === null) apply.disabled = true;
+        for (const element of Object.values(this.#filterElements)) {
+            if (Array.isArray(element)) {
+                element.forEach((el) => {
+                    if (
+                        el instanceof HTMLInputElement ||
+                        element instanceof HTMLSelectElement
+                    ) {
+                        el.addEventListener("input", () =>
+                            this.enableApplyButton(apply),
+                        );
+                    }
+                });
+            } else if (
+                element instanceof HTMLInputElement ||
+                element instanceof HTMLSelectElement
+            ) {
+                element.addEventListener("input", () =>
+                    this.enableApplyButton(apply),
+                );
+            }
+        }
 
         const discard = document.createElement("button");
         discard.type = "button";
@@ -338,8 +359,6 @@ class Column {
             });
             buttonsContainer.append(clear);
         }
-
-        this.#filterElements.apply = apply;
 
         dialog.append(control, buttonsContainer);
         return dialog;
@@ -376,10 +395,8 @@ class Column {
         return true;
     }
 
-    enableApplyButton() {
-        if (this.isValidFilter) {
-            this.#filterElements.apply.disabled = false;
-        }
+    enableApplyButton(apply) {
+        apply.disabled = !this.isValidFilter;
     }
 }
 
@@ -409,21 +426,26 @@ class TextColumn extends Column {
         const select = document.createElement("select");
 
         select.innerHTML = `
-<option value="equals">Equals</option>
-<option value="contains">Contains</option>
-<option value="starts">Starts with</option>
-<option value="ends">Ends with</option>
-`;
+        <option value="empty">Empty</option>
+        <option value="not-empty">Not empty</option>
+        <option value="equals">Equals</option>
+        <option value="contains">Contains</option>
+        <option value="starts">Starts with</option>
+        <option value="ends">Ends with</option>
+        `;
         if (filterConfig !== null && filterConfig.operator !== undefined) {
             select.value = filterConfig.operator;
         }
 
         const text = document.createElement("input");
         text.type = "text";
+        text.hidden = true;
         if (filterConfig !== null && filterConfig.value !== undefined) {
             text.value = filterConfig.value;
+            text.hidden =
+                filterConfig.operator === "empty" ||
+                filterConfig.operator === "not-empty";
         }
-        text.addEventListener("input", () => this.enableApplyButton());
 
         const label = document.createElement("label");
         const checkbox = document.createElement("input");
@@ -431,7 +453,22 @@ class TextColumn extends Column {
         label.append(checkbox, "Case-sensitive");
         if (filterConfig !== null && filterConfig.caseSensitive !== undefined) {
             checkbox.checked = filterConfig.caseSensitive;
+            label.hidden =
+                filterConfig.operator === "empty" ||
+                filterConfig.operator === "not-empty";
         }
+        select.addEventListener("input", () => {
+            const val = select.value;
+            if (val === "empty" || val === "not-empty") {
+                text.hidden = true;
+                label.hidden = true;
+            } else {
+                text.hidden = false;
+                label.hidden = false;
+                text.value = "";
+                label.checked = false;
+            }
+        });
 
         container.append(select, text, label);
         this.setFilterElements({
@@ -452,7 +489,12 @@ class TextColumn extends Column {
     }
 
     get isValidFilter() {
-        return this.filterConfig.value !== "";
+        const { operator, value } = this.filterConfig;
+        if (operator === "empty" || operator === "not-empty") {
+            return true;
+        } else {
+            return value !== "";
+        }
     }
 
     filter(row) {
@@ -462,6 +504,12 @@ class TextColumn extends Column {
         const a = caseSensitive ? s : s.toLowerCase();
         const b = caseSensitive ? value : value.toLowerCase();
         switch (operator) {
+            case "empty": {
+                return s === "";
+            }
+            case "not-empty": {
+                return s !== "";
+            }
             case "equals": {
                 return a === b;
             }
@@ -515,20 +563,122 @@ class DateColumn extends Column {
 
         const filterConfig = this.grid.getColumnFilterConfig(this.name);
 
-        //TODO
+        const select = document.createElement("select");
+        select.innerHTML = `
+        <option value="empty">Empty</option>
+        <option value="not-empty">Not empty</option>
+        <option value="is">Date is</option>
+        <option value="between">Date between</option>
+        <option value="after">Date after</option>
+        <option value="before">Date before</option>
+        `;
+        if (filterConfig !== null) {
+            select.value = filterConfig.operator;
+        }
 
+        const label1 = document.createElement("label");
+        const span1 = document.createElement("span");
+        const date1 = document.createElement("input");
+        date1.type = "date";
+        span1.textContent = "Date";
+        label1.hidden = true;
+        if (filterConfig !== null) {
+            date1.value = filterConfig.value;
+            span1.textContent =
+                filterConfig.operator === "between" ? "Start" : "Date";
+            label1.hidden =
+                filterConfig.operator === "empty" ||
+                filterConfig.operator === "not-empty";
+        }
+        label1.append(span1, date1);
+
+        const label2 = document.createElement("label");
+        const span2 = document.createElement("span");
+        const date2 = document.createElement("input");
+        date2.type = "date";
+        span2.textContent = "End";
+        label2.hidden = true;
+        if (filterConfig !== null) {
+            label2.hidden = filterConfig.operator !== "between";
+            date2.value = filterConfig.endValue;
+        }
+        label2.append(span2, date2);
+
+        select.addEventListener("input", () => {
+            if (select.value === "empty" || select.value === "not-empty") {
+                label1.hidden = true;
+                label2.hidden = true;
+            } else if (select.value === "between") {
+                label1.hidden = false;
+                span1.textContent = "Start";
+                label2.hidden = false;
+            } else {
+                span1.textContent = "Date";
+                label1.hidden = false;
+                label2.hidden = true;
+            }
+        });
+
+        container.append(select, label1, label2);
+        this.setFilterElements({ select, date1, date2 });
+        return container;
     }
 
     get filterConfig() {
-        //TODO
+        return {
+            operator: this.filterElements.select.value,
+            value: this.filterElements.date1.value,
+            endValue: this.filterElements.date2.value,
+        };
     }
 
     get isValidFilter() {
-        //TODO
+        const { operator, value, endValue } = this.filterConfig;
+        if (operator === "between") {
+            return (
+                value !== "" &&
+                endValue !== "" &&
+                new Date(value) < new Date(endValue)
+            );
+        } else if (operator === "empty" || operator === "not-empty") {
+            return true;
+        } else {
+            return value !== "";
+        }
     }
 
-    filter() {
-        //TODO
+    filter(row) {
+        const d = new Date(row.getField(this.name));
+        const { operator, value, endValue } = this.grid.getColumnFilterConfig(
+            this.name,
+        );
+
+        const v = new Date(value);
+        const e = endValue === "" ? null : new Date(endValue);
+
+        switch (operator) {
+            case "empty": {
+                return Number.isNaN(d.getTime());
+            }
+            case "not-empty": {
+                return !Number.isNaN(d.getTime());
+            }
+            case "is": {
+                return d.getTime() === v.getTime();
+            }
+            case "between": {
+                return d >= v && d <= e;
+            }
+            case "after": {
+                return d > v;
+            }
+            case "before": {
+                return d < v;
+            }
+            default: {
+                return true;
+            }
+        }
     }
 }
 
@@ -539,10 +689,9 @@ class DecimalColumn extends Column {
 
     constructor(columnConfig, grid) {
         super(columnConfig, grid);
-        this.#places =
-            columnConfig.places === undefined ? 2 : columnConfig.places;
-        this.#min = columnConfig.min;
-        this.#max = columnConfig.max;
+        this.#places = columnConfig.places ?? 2;
+        this.#min = columnConfig.min ?? null;
+        this.#max = columnConfig.max ?? null;
     }
 
     get cellClass() {
@@ -554,6 +703,182 @@ class DecimalColumn extends Column {
         if (td === null) return null;
         td.append(value.toFixed(this.#places) || "");
         return td;
+    }
+
+    renderFilterControl() {
+        const container = super.renderFilterControl();
+
+        const filterConfig = this.grid.getColumnFilterConfig(this.name);
+
+        const select = document.createElement("select");
+        select.innerHTML = `
+        <option value="e">Equals</option>
+        <option value="b">Between</option>
+        <option value="g">Greater than</option>
+        <option value="l">Less than</option>
+        <option value="ge">Greater than or Equals</option>
+        <option value="le">Less than or Equals</option>
+        `;
+        if (filterConfig !== null) {
+            select.value = filterConfig.operator;
+        }
+
+        const label1 = document.createElement("label");
+        const span1 = document.createElement("span");
+        const num1 = document.createElement("input");
+        num1.type = "number";
+        num1.step = Math.pow(10, -this.#places);
+        if (this.#min !== null) {
+            num1.min = this.#min;
+        }
+        if (this.#max !== null) {
+            num1.max = this.#max;
+        }
+        if (this.#places === 0) {
+            num1.addEventListener("beforeinput", (event) => {
+                if (event.data === ".") {
+                    event.preventDefault();
+                }
+            });
+        } else {
+            num1.addEventListener("input", () => {
+                const input = num1;
+                if (input.value.includes(".")) {
+                    const [intPart, decPart] = input.value.split(".");
+                    if (decPart.length > this.#places) {
+                        input.value =
+                            intPart + "." + decPart.slice(0, this.#places);
+                    }
+                }
+            });
+        }
+
+        span1.textContent = "Value";
+        if (filterConfig !== null) {
+            if (filterConfig.operator === "b") {
+                span1.textContent = "Min";
+            }
+            num1.value = filterConfig.value;
+        }
+        label1.append(span1, num1);
+
+        const label2 = document.createElement("label");
+        const span2 = document.createElement("span");
+        const num2 = document.createElement("input");
+        num2.type = "number";
+        num2.step = Math.pow(10, -this.#places);
+        if (this.#min !== null) {
+            num2.min = this.#min;
+        }
+        if (this.#max !== null) {
+            num2.max = this.#max;
+        }
+        if (this.#places === 0) {
+            num2.addEventListener("beforeinput", (event) => {
+                if (event.data === ".") {
+                    event.preventDefault();
+                }
+            });
+        } else {
+            num2.addEventListener("input", () => {
+                const input = num2;
+                if (input.value.includes(".")) {
+                    const [intPart, decPart] = input.value.split(".");
+                    if (decPart.length > this.#places) {
+                        input.value =
+                            intPart + "." + decPart.slice(0, this.#places);
+                    }
+                }
+            });
+        }
+
+        span2.textContent = "Max";
+        label2.append(span2, num2);
+        label2.hidden = true;
+        if (filterConfig !== null) {
+            if (filterConfig.operator === "b") {
+                label2.hidden = false;
+                num2.value = filterConfig.maxValue;
+            }
+        }
+
+        select.addEventListener("input", () => {
+            if (select.value === "b") {
+                span1.textContent = "Min";
+                label2.hidden = false;
+            } else {
+                span1.textContent = "Value";
+                label2.hidden = true;
+            }
+        });
+
+        this.setFilterElements({ select, num1, num2 });
+
+        container.append(select, label1, label2);
+
+        return container;
+    }
+
+    get filterConfig() {
+        return {
+            operator: this.filterElements.select.value,
+            value: this.filterElements.num1.value,
+            maxValue: this.filterElements.num2.value,
+        };
+    }
+
+    get isValidFilter() {
+        const { operator, value, maxValue } = this.filterConfig;
+        if (operator === "b") {
+            return (
+                value !== "" &&
+                Number(value) >= this.#min &&
+                Number(value) <= this.#max &&
+                maxValue !== "" &&
+                Number(maxValue) >= this.#min &&
+                Number(maxValue) <= this.#max &&
+                Number(value) < Number(maxValue)
+            );
+        } else {
+            return (
+                value !== "" &&
+                Number(value) >= this.#min &&
+                Number(value) <= this.#max
+            );
+        }
+    }
+
+    filter(row) {
+        const n = row.getField(this.name);
+        const { operator, value, maxValue } = this.grid.getColumnFilterConfig(
+            this.name,
+        );
+        const v = Number(value);
+        const mv = maxValue === "" ? null : Number(maxValue);
+
+        switch (operator) {
+            case "e": {
+                return n === v;
+            }
+            case "b": {
+                return n >= v && n <= mv;
+            }
+            case "g": {
+                return n > v;
+            }
+            case "l": {
+                return n < v;
+            }
+            case "ge": {
+                return n >= v;
+            }
+            case "le": {
+                return n <= v;
+            }
+            default: {
+                return true;
+            }
+        }
     }
 }
 
@@ -618,6 +943,180 @@ class SelectColumn extends Column {
         const bo = this.getOption(b.getField(this.name));
         return ao.optionIndex - bo.optionIndex;
     }
+
+    renderFilterControl() {
+        const container = super.renderFilterControl();
+
+        const filterConfig = this.grid.getColumnFilterConfig(this.name);
+
+        const select = document.createElement("select");
+        select.innerHTML = `
+        <option value="empty">Empty</option>
+        <option value="not-empty">Not empty</option>
+        <option value="is">Is</option>
+        <option value="not">Is not</option>
+        <option value="in-list">In list</option>
+        <option value="not-in-list">Not in list</option>
+        `;
+        if (filterConfig !== null) {
+            select.value = filterConfig.operator;
+        }
+
+        const optionsContainer = document.createElement("div");
+        optionsContainer.className = "options-container";
+        optionsContainer.hidden = true;
+        if (filterConfig !== null && filterConfig.operator !== "empty") {
+            optionsContainer.hidden = false;
+        }
+
+        const options = [...this.optionList];
+        options.sort((a, b) => a.optionIndex - b.optionIndex);
+
+        const radiosContainer = document.createElement("div");
+        radiosContainer.hidden = true;
+        if (
+            filterConfig !== null &&
+            ["is", "not"].includes(filterConfig.operator)
+        ) {
+            radiosContainer.hidden = false;
+        }
+        const radios = [];
+        options.forEach((opt) => {
+            const label = document.createElement("label");
+            const radio = document.createElement("input");
+            radio.type = "radio";
+            radio.name = this.name;
+            radio.value = opt.optionValue;
+            label.append(radio, opt.optionLabel);
+            radios.push(radio);
+            radiosContainer.append(label);
+            if (
+                filterConfig !== null &&
+                filterConfig.value === opt.optionValue
+            ) {
+                radio.checked = true;
+            }
+        });
+
+        const checkboxesContainer = document.createElement("div");
+        checkboxesContainer.hidden = true;
+        if (
+            filterConfig !== null &&
+            ["in-list", "not-in-list"].includes(filterConfig.operator)
+        ) {
+            checkboxesContainer.hidden = false;
+        }
+        const checkboxes = [];
+        options.forEach((opt) => {
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = opt.optionValue;
+            label.append(checkbox, opt.optionLabel);
+            checkboxes.push(checkbox);
+            checkboxesContainer.append(label);
+            if (
+                filterConfig !== null &&
+                filterConfig.values.includes(opt.optionValue)
+            ) {
+                checkbox.checked = true;
+            }
+        });
+
+        optionsContainer.append(radiosContainer, checkboxesContainer);
+
+        select.addEventListener("input", () => {
+            if (select.value === "empty" || select.value === "not-empty") {
+                optionsContainer.hidden = true;
+                radiosContainer.hidden = true;
+                checkboxesContainer.hidden = true;
+            } else if (select.value === "is" || select.value === "not") {
+                optionsContainer.hidden = false;
+                radiosContainer.hidden = false;
+                checkboxesContainer.hidden = true;
+                radios.forEach((r) => {
+                    r.checked = false;
+                });
+            } else if (
+                select.value === "in-list" ||
+                select.value === "not-in-list"
+            ) {
+                optionsContainer.hidden = false;
+                checkboxesContainer.hidden = false;
+                radiosContainer.hidden = true;
+                checkboxes.forEach((c) => {
+                    c.checked = false;
+                });
+            }
+        });
+
+        container.append(select, optionsContainer);
+        this.setFilterElements({
+            select,
+            radios,
+            checkboxes,
+            optionsContainer,
+            radiosContainer,
+            checkboxesContainer,
+        });
+        return container;
+    }
+
+    get filterConfig() {
+        return {
+            operator: this.filterElements.select.value,
+            value:
+                this.filterElements.radios.find((r) => r.checked)?.value ?? "",
+            values: this.filterElements.checkboxes
+                .filter((c) => c.checked)
+                .map((c) => c.value),
+        };
+    }
+
+    get isValidFilter() {
+        const { operator, value, values } = this.filterConfig;
+
+        if (operator === "empty" || operator === "not-empty") {
+            return true;
+        } else if (operator === "is" || operator === "not") {
+            return value !== "";
+        } else if (operator === "in-list" || operator === "not-in-list") {
+            return values.length > 0;
+        } else {
+            return false;
+        }
+    }
+
+    filter(row) {
+        const v = row.getField(this.name);
+        const { operator, value, values } = this.grid.getColumnFilterConfig(
+            this.name,
+        );
+
+        switch (operator) {
+            case "empty": {
+                return v === "";
+            }
+            case "not-empty": {
+                return v !== "";
+            }
+            case "is": {
+                return v === value;
+            }
+            case "not": {
+                return v !== value;
+            }
+            case "in-list": {
+                return values.includes(v);
+            }
+            case "not-in-list": {
+                return !values.includes(v);
+            }
+            default: {
+                return true;
+            }
+        }
+    }
 }
 
 class MultiSelectColumn extends SelectColumn {
@@ -658,6 +1157,107 @@ class MultiSelectColumn extends SelectColumn {
 
         return 0;
     }
+
+    renderFilterControl() {
+        const container = super.renderFilterControl();
+
+        const {
+            select,
+            radios,
+            checkboxes,
+            optionsContainer,
+            radiosContainer,
+            checkboxesContainer,
+        } = this.filterElements;
+
+        const filterConfig = this.grid.getColumnFilterConfig(this.name);
+
+        const newSelect = select.cloneNode(true);
+
+        select.replaceWith(newSelect);
+
+        newSelect.innerHTML = `
+        <option value="empty">Empty</option>
+        <option value="not-empty">Not empty</option>
+        <option value="any-of">Has any of</option>
+        <option value="none-of">Has none of</option>
+        <option value="all-of">Has all of</option>
+        <option value="exactly">Is exactly</option>
+        `;
+        if (filterConfig !== null) {
+            newSelect.value = filterConfig.operator;
+        }
+
+        radiosContainer.remove();
+
+        newSelect.addEventListener("input", () => {
+            const val = newSelect.value;
+            if (val === "empty" || val === "not-empty") {
+                optionsContainer.hidden = true;
+                checkboxesContainer.hidden = true;
+            } else {
+                optionsContainer.hidden = false;
+                checkboxesContainer.hidden = false;
+                checkboxes.forEach((c) => {
+                    c.checked = false;
+                });
+            }
+        });
+
+        this.setFilterElements({ select: newSelect, checkboxes });
+        return container;
+    }
+
+    get filterConfig() {
+        return {
+            operator: this.filterElements.select.value,
+            values: this.filterElements.checkboxes
+                .filter((c) => c.checked)
+                .map((c) => c.value),
+        };
+    }
+
+    get isValidFilter() {
+        const { operator, values } = this.filterConfig;
+        if (operator === "empty" || operator === "not-empty") {
+            return true;
+        } else {
+            return values.length > 0;
+        }
+    }
+
+    filter(row) {
+        const l = row.getField(this.name);
+
+        const { operator, values } = this.grid.getColumnFilterConfig(this.name);
+
+        switch (operator) {
+            case "empty": {
+                return l.length === 0;
+            }
+            case "not-empty": {
+                return l.length !== 0;
+            }
+            case "any-of": {
+                return l.some((o) => values.includes(o));
+            }
+            case "none-of": {
+                return l.every((o) => !values.includes(o));
+            }
+            case "all-of": {
+                return values.every((o) => l.includes(o));
+            }
+            case "exactly": {
+                return (
+                    l.length === values.length &&
+                    l.every((o) => values.includes(o))
+                );
+            }
+            default: {
+                return true;
+            }
+        }
+    }
 }
 
 class BooleanColumn extends Column {
@@ -676,6 +1276,35 @@ class BooleanColumn extends Column {
         toggle.append(knob);
         td.append(toggle);
         return td;
+    }
+
+    renderFilterControl() {
+        const container = super.renderFilterControl();
+
+        const filterConfig = this.grid.getColumnFilterConfig(this.name);
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "toggle-checkbox";
+        if (filterConfig !== null) {
+            checkbox.checked = filterConfig.value;
+        }
+
+        container.append(checkbox);
+        this.setFilterElements({ checkbox });
+        return container;
+    }
+
+    get filterConfig() {
+        return { value: this.filterElements.checkbox.checked };
+    }
+
+    filter(row) {
+        const v = row.getField(this.name);
+
+        const { value } = this.grid.getColumnFilterConfig(this.name);
+
+        return v === value;
     }
 }
 

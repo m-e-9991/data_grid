@@ -4,11 +4,13 @@ export class DataGrid {
     #index;
     #size;
     #rows = [];
+    #processedRows = [];
+    #renderedRows = [];
     #table;
     #sortState;
     #filterState = {};
 
-    constructor({ container, config, data = [], index = 0, size = 50 } = {}) {
+    constructor({ container, config, data = [], index = 0, size = 10 } = {}) {
         this.#container = container;
         this.#config = config;
         this.#index = index;
@@ -24,38 +26,81 @@ export class DataGrid {
         const thead = document.createElement("thead");
         const tbody = document.createElement("tbody");
 
+        this.renderHeaders(thead);
+
+        table.append(thead);
+
+        this.#processedRows = [...this.#rows];
+
+        this.sortRows();
+
+        this.filterRows();
+
+        this.renderRows(tbody);
+
+        table.append(tbody);
+
+        const scrollArea = document.createElement("div");
+        scrollArea.className = "scroll-area";
+        scrollArea.append(table);
+        scrollArea.style.setProperty("--page-size", this.#size);
+
+        const footer = this.renderFooter();
+
+        this.#container.append(scrollArea, footer);
+    }
+
+    renderHeaders(thead) {
         for (let c of this.#table.columns) {
             const ch = c.renderHeader();
             if (ch === null) continue;
             thead.append(ch);
         }
+    }
 
-        table.append(thead);
-
-        let renderedData = [...this.#rows];
-
+    sortRows() {
         if (this.#sortState !== null && this.#sortState !== undefined) {
             const sortColumn = this.#table.getColumn(
                 this.#sortState.columnName,
             );
-            renderedData.sort((a, b) => {
+            this.#processedRows.sort((a, b) => {
                 let sign = this.#sortState.direction === "asc" ? 1 : -1;
                 return sign * sortColumn.compareValues(a, b);
             });
         }
+    }
 
+    filterRows() {
         if (Object.keys(this.#filterState).length !== 0) {
             for (const columnName of Object.keys(this.#filterState)) {
                 const column = this.#table.getColumn(columnName);
-                renderedData = renderedData.filter((row) => column.filter(row));
+                this.#processedRows = this.#processedRows.filter((row) =>
+                    column.filter(row),
+                );
             }
         }
+    }
 
+    renderRows(tbody) {
+        if (this.#processedRows.length === 0) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = this.#table.columns.filter((c) => !c.hidden).length;
+            const message = document.createElement("div");
+            message.className = "empty-state";
+            message.textContent = "No matching results";
+            td.append(message);
+            tr.append(td);
+            tbody.append(tr);
+            return;
+        }
         const start = this.#index * this.#size;
         const end = (this.#index + 1) * this.#size;
+        this.#renderedRows = [];
         for (let i = start; i < end; ++i) {
-            if (i >= renderedData.length) break;
-            const r = renderedData[i];
+            if (i >= this.#processedRows.length) break;
+            const r = this.#processedRows[i];
+            this.#renderedRows.push(r);
             const tr = document.createElement("tr");
             for (let c of this.#table.columns) {
                 const td = c.renderCell(r.getField(c.name));
@@ -64,10 +109,115 @@ export class DataGrid {
             }
             tbody.append(tr);
         }
+    }
 
-        table.append(tbody);
+    renderFooter() {
+        const footer = document.createElement("div");
+        footer.className = "grid-footer";
 
-        this.#container.append(table);
+        const totalLength = this.#processedRows.length;
+        const renderedLength = this.#renderedRows.length;
+
+        const pagesCount = Math.ceil(totalLength / this.#size);
+
+        const first = document.createElement("button");
+        first.type = "button";
+        first.append("<<");
+        if (this.#index === 0 || pagesCount === 0) {
+            first.disabled = true;
+        }
+        first.addEventListener("click", () => {
+            this.setIndex(0);
+        });
+
+        const prev = document.createElement("button");
+        prev.type = "button";
+        prev.append("<");
+        if (this.#index === 0 || pagesCount === 0) {
+            prev.disabled = true;
+        }
+        prev.addEventListener("click", () => {
+            this.setIndex(this.#index - 1);
+        });
+
+        const index = document.createElement("input");
+        index.type = "number";
+        index.value = this.#index + 1;
+        index.min = 1;
+        index.max = pagesCount;
+        index.addEventListener("blur", () => {
+            index.value = this.#index + 1;
+        });
+        index.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                let val = Number(index.value) - 1;
+                if (val >= pagesCount) val = pagesCount - 1;
+                this.setIndex(val);
+            }
+        });
+        if (pagesCount === 0) {
+            index.value = 0;
+            index.disabled = true;
+        }
+
+        const totalPages = document.createElement("span");
+        totalPages.textContent = pagesCount;
+
+        const nxt = document.createElement("button");
+        nxt.type = "button";
+        nxt.append(">");
+        if (this.#index === pagesCount - 1 || pagesCount === 0) {
+            nxt.disabled = true;
+        }
+        nxt.addEventListener("click", () => {
+            this.setIndex(this.#index + 1);
+        });
+
+        const last = document.createElement("button");
+        last.type = "button";
+        last.append(">>");
+        if (this.#index === pagesCount - 1 || pagesCount === 0) {
+            last.disabled = true;
+        }
+        last.addEventListener("click", () => {
+            this.setIndex(pagesCount - 1);
+        });
+
+        const size = document.createElement("input");
+        size.type = "number";
+        size.value =
+            this.#size === renderedLength ? this.#size : renderedLength;
+        size.min = 10;
+        size.max = totalLength;
+        size.addEventListener("blur", () => {
+            size.value = this.#size;
+        });
+        size.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                let val = Number(size.value);
+                if (val > totalLength) val = totalLength;
+                this.setPageSize(val);
+            }
+        });
+        if (totalLength === 0) {
+            size.value = 0;
+            size.disabled = true;
+        }
+
+        footer.append(
+            first,
+            prev,
+            index,
+            " of ",
+            totalPages,
+            nxt,
+            last,
+            " showing ",
+            size,
+            " of ",
+            totalLength,
+        );
+        return footer;
     }
 
     extractRows(data) {
@@ -98,17 +248,30 @@ export class DataGrid {
 
     appendFilterConfig(columnName, filterConfig) {
         this.#filterState[columnName] = filterConfig;
+        this.#index = 0;
         this.render();
     }
 
     removeFilterConfig(columnName) {
         delete this.#filterState[columnName];
+        this.#index = 0;
         this.render();
     }
 
     getColumnFilterConfig(columnName) {
         if (this.#filterState[columnName] === undefined) return null;
         return this.#filterState[columnName];
+    }
+
+    setIndex(index) {
+        this.#index = index;
+        this.render();
+    }
+
+    setPageSize(size) {
+        this.#size = size;
+        this.#index = 0;
+        this.render();
     }
 }
 
@@ -312,6 +475,7 @@ class Column {
             this.#grid.appendFilterConfig(this.name, this.filterConfig);
         });
         if (filterConfig === null) apply.disabled = true;
+        this.enableApplyButton(apply);
         for (const element of Object.values(this.#filterElements)) {
             if (Array.isArray(element)) {
                 element.forEach((el) => {
@@ -451,6 +615,7 @@ class TextColumn extends Column {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         label.append(checkbox, "Case-sensitive");
+        label.hidden = true;
         if (filterConfig !== null && filterConfig.caseSensitive !== undefined) {
             checkbox.checked = filterConfig.caseSensitive;
             label.hidden =

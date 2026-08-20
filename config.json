@@ -55,6 +55,7 @@
             "columnLabel": "Multi-Select",
             "columnType": "multiSelect",
             "optionType": "text",
+            "required": true,
             "optionList": [
                 {
                     "optionValue": "1",

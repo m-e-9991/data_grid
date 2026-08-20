@@ -3,7 +3,11 @@
 }
 
 body {
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family:
+        system-ui,
+        -apple-system,
+        "Segoe UI",
+        sans-serif;
     background: #f4f5f7;
     color: #1f2328;
     margin: 0;
@@ -230,7 +234,7 @@ tbody tr:hover {
     color: #2f6fed;
 }
 
-.overlay {
+.filter-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0);
@@ -382,3 +386,289 @@ tbody tr:hover {
     color: #6b7280;
 }
 
+.grid-toolbar {
+    background: #f0f1f3;
+    border-bottom: 2px solid #d8dbe0;
+    padding: 0.6rem 0.9rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.grid-toolbar button {
+    appearance: none;
+    border: 1px solid #d8dbe0;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    color: #1f2328;
+    cursor: pointer;
+}
+
+.grid-toolbar button:hover {
+    background: #f4f5f7;
+    border-color: #b9bfc7;
+}
+
+.grid-toolbar .edit-btn,
+.grid-toolbar .save-btn {
+    border-color: #2f6fed;
+    background: #2f6fed;
+    color: #fff;
+}
+
+.grid-toolbar .edit-btn:hover,
+.grid-toolbar .save-btn:hover {
+    background: #2559c9;
+    border-color: #2559c9;
+}
+
+.grid-toolbar .delete-btn {
+    border-color: #f0b7b7;
+    color: #c0392b;
+}
+
+.grid-toolbar .delete-btn:hover {
+    background: #fdf0f0;
+}
+
+.grid-toolbar .add-btn {
+    border-color: #34c759;
+    background: #34c759;
+    color: #fff;
+}
+
+.grid-toolbar .add-btn:hover {
+    background: #2ba84a;
+    border-color: #2ba84a;
+}
+
+.grid-toolbar .clear-filters-btn {
+    color: #565c66;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 18, 22, 0.35);
+    z-index: 100;
+}
+
+.modal {
+    z-index: 101;
+    border: 1px solid #d8dbe0;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 1.25rem;
+    max-width: 320px;
+    font-family: inherit;
+    color: #1f2328;
+}
+
+.modal:has(.add-row-form) {
+    max-width: 480px;
+    width: 90vw;
+}
+
+.add-row-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.add-row-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #565c66;
+}
+
+.add-row-form label input,
+.add-row-form label select,
+.add-row-form label button {
+    appearance: none;
+    border: 1px solid #d8dbe0;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    min-height: 2.1rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-align: left;
+    color: #1f2328;
+    background: #fff;
+    cursor: pointer;
+}
+
+.add-row-form label input:focus,
+.add-row-form label select:focus,
+.add-row-form label button:focus {
+    outline: none;
+    border-color: #2f6fed;
+}
+
+.modal::backdrop {
+    background: transparent;
+}
+
+.modal .content {
+    display: block;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.modal .buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.modal button {
+    appearance: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.confirm-btn {
+    border: 1px solid #2f6fed;
+    background: #2f6fed;
+    color: #fff;
+}
+
+.confirm-btn:hover:not(:disabled) {
+    background: #2559c9;
+}
+
+.confirm-btn:disabled {
+    background: #b7c6ea;
+    border-color: #b7c6ea;
+    color: #fff;
+    cursor: not-allowed;
+}
+
+.modal .cancel-btn {
+    border: 1px solid #d8dbe0;
+    background: #fff;
+    color: #1f2328;
+}
+
+.modal .cancel-btn:hover {
+    background: #f4f5f7;
+}
+
+.edit-mode-cell {
+    cursor: pointer;
+    background: #fffce4;
+}
+
+.edit-mode-cell:not(.editing-cell):hover {
+    background: #eef2ff;
+    outline: 1px dashed #2f6fed;
+    outline-offset: -1px;
+}
+
+.dirty-cell {
+    background: #fff8e6;
+    box-shadow: inset 3px 0 0 0 #e8a33d;
+}
+
+tbody tr.added-row {
+    background: #f0fdf4;
+    box-shadow: inset 3px 0 0 0 #34c759;
+}
+
+tbody tr.added-row:hover {
+    background: #e3fbe9;
+}
+
+tbody tr.added-row .edit-mode-cell {
+    background: #f0fdf4;
+}
+
+.editing-cell {
+    position: relative;
+    background: #fff;
+    outline: 2px solid #2f6fed;
+    outline-offset: -2px;
+}
+
+.editing-cell input:not(.toggle-checkbox),
+.editing-cell select {
+    display: block;
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+}
+
+.editing-cell button {
+    position: absolute;
+    inset: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0.5rem 0.9rem;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.multiselect-edit-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    max-height: 5rem;
+    overflow-y: auto;
+    width: auto;
+    min-width: 200px;
+    position: fixed;
+    margin: 0;
+    z-index: 101;
+    background: #fff;
+    border: 1px solid #d8dbe0;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    font-family: inherit;
+    color: #1f2328;
+}
+
+.multiselect-edit-options::backdrop {
+    background: transparent;
+}
+
+.multiselect-edit-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.multiselect-edit-options input[type="checkbox"] {
+    accent-color: #2f6fed;
+}
+
+.wrong-input {
+    outline: 2px solid #c0392b !important;
+    outline-offset: -2px !important;
+    background: #fdf0f0 !important;
+}

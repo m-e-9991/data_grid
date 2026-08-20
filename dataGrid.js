@@ -1,4 +1,4 @@
-export class DataGrid {
+export class DataGrid extends EventTarget {
     #container;
     #config;
     #index;
@@ -7,38 +7,47 @@ export class DataGrid {
     #processedRows = [];
     #renderedRows = [];
     #table;
-    #sortState;
+    #sortState = null;
     #filterState = {};
+    #editState = false;
+    #selectedRows = [];
+    #addedRows = [];
+    #editingCell = null;
+    #editingCellInput = null;
+    #dirtyRows = [];
+    #removedRows = [];
 
     constructor({ container, config, data = [], index = 0, size = 10 } = {}) {
+        super();
         this.#container = container;
         this.#config = config;
         this.#index = index;
         this.#size = size;
-        this.extractRows(data);
         this.#table = new Table(this.#config, this);
+        this.extractRows(data);
         this.render();
     }
 
-    render() {
+    render(keepScroll = false) {
+        const oldScrollArea = this.#container.querySelector(".scroll-area");
+        const scrollTop = oldScrollArea?.scrollTop ?? 0;
+        const scrollLeft = oldScrollArea?.scrollLeft ?? 0;
+
         this.#container.textContent = "";
+
         const table = document.createElement("table");
-        const thead = document.createElement("thead");
-        const tbody = document.createElement("tbody");
 
-        this.renderHeaders(thead);
-
-        table.append(thead);
+        const toolbar = this.renderToolbar();
 
         this.#processedRows = [...this.#rows];
+
+        this.appendAddedRows();
 
         this.sortRows();
 
         this.filterRows();
 
-        this.renderRows(tbody);
-
-        table.append(tbody);
+        table.append(this.renderHeaders(), this.renderRows());
 
         const scrollArea = document.createElement("div");
         scrollArea.className = "scroll-area";
@@ -47,41 +56,267 @@ export class DataGrid {
 
         const footer = this.renderFooter();
 
-        this.#container.append(scrollArea, footer);
+        this.#container.append(toolbar, scrollArea, footer);
+
+        if (keepScroll) {
+            scrollArea.scrollTop = scrollTop;
+            scrollArea.scrollLeft = scrollLeft;
+        }
+
+        if (this.#editingCellInput !== null) {
+            if (
+                this.#editingCellInput instanceof HTMLInputElement &&
+                (this.#editingCellInput.type === "text" ||
+                    this.#editingCellInput.type === "number")
+            ) {
+                this.#editingCellInput.select();
+            } else {
+                this.#editingCellInput.focus();
+            }
+        }
     }
 
-    renderHeaders(thead) {
+    renderToolbar() {
+        const toolbar = document.createElement("div");
+        toolbar.className = "grid-toolbar";
+
+        if (Object.keys(this.#filterState).length !== 0) {
+            const clearFilters = document.createElement("button");
+            clearFilters.type = "button";
+            clearFilters.append("Clear Filters");
+            clearFilters.className = "clear-filters-btn";
+            clearFilters.addEventListener("click", () => {
+                this.clearFilterState();
+            });
+            toolbar.append(clearFilters);
+        }
+
+        if (!this.#table.readOnly && !this.#editState) {
+            const edit = document.createElement("button");
+            edit.type = "button";
+            edit.append("Edit");
+            edit.className = "edit-btn";
+            edit.addEventListener("click", () => {
+                this.toggleEditMode(true);
+            });
+            toolbar.append(edit);
+        }
+
+        if (this.#editState && this.#selectedRows.length > 0) {
+            const del = document.createElement("button");
+            del.type = "button";
+            del.className = "delete-btn";
+            del.append(
+                `${this.hardDelete ? "Delete" : "Archive"} Selected (${this.#selectedRows.length})`,
+            );
+            del.addEventListener("click", () => {
+                this.showModal(
+                    `${this.hardDelete ? "Delete" : "Archive"} (${this.#selectedRows.length}) selected rows?`,
+                    this.hardDelete ? "Delete" : "Archive",
+                    () => {
+                        this.commitRemoval();
+                    },
+                );
+            });
+            toolbar.append(del);
+        }
+
+        if (this.#editState) {
+            const add = document.createElement("button");
+            add.type = "button";
+            add.className = "add-btn";
+            add.append("Add");
+            add.addEventListener("click", () => {
+                const form = document.createElement("form");
+                form.className = "add-row-form";
+
+                const row = this.getNewRow();
+
+                const inputs = this.#table.columns
+                    .filter((c) => !c.hidden)
+                    .map((c) => {
+                        const label = document.createElement("label");
+                        const input = c.renderInputField(row.getField(c.name));
+                        label.append(c.label, input);
+                        input.classList.toggle(
+                            "wrong-input",
+                            !c.isValidInput(c.getInputValue(input)),
+                        );
+                        input.addEventListener("input", () => {
+                            input.classList.toggle(
+                                "wrong-input",
+                                !c.isValidInput(c.getInputValue(input)),
+                            );
+                        });
+                        form.append(label);
+                        return { column: c, input };
+                    });
+
+                this.showModal(
+                    form,
+                    "Submit",
+                    () => {
+                        inputs.forEach(({ column, input }) => {
+                            row.setField(
+                                column.name,
+                                column.getInputValue(input),
+                            );
+                        });
+                        this.commitAdd(row);
+                    },
+                    () => {
+                        return inputs.every(({ column, input }) => {
+                            return column.isValidInput(
+                                column.getInputValue(input),
+                            );
+                        });
+                    },
+                );
+            });
+            toolbar.append(add);
+        }
+
+        const changesCount =
+            this.#dirtyRows.length +
+            this.#addedRows.length +
+            this.#removedRows.length;
+
+        if (this.#editState && changesCount > 0) {
+            const save = document.createElement("button");
+            save.type = "button";
+            save.className = "save-btn";
+            save.append(`Save (${changesCount})`);
+            save.addEventListener("click", () => {
+                this.showModal(
+                    `Save (${changesCount}) changes?`,
+                    "Save",
+                    () => {
+                        this.applyChanges();
+                    },
+                );
+            });
+            toolbar.append(save);
+        }
+
+        if (this.#editState) {
+            const cancel = document.createElement("button");
+            cancel.type = "button";
+            cancel.className = "cancel-btn";
+            cancel.append("Cancel");
+            cancel.addEventListener("click", () => {
+                if (changesCount === 0) {
+                    this.clearEditState();
+                    this.render();
+                } else {
+                    this.showModal(
+                        `Discard (${changesCount}) changes?`,
+                        "Discard",
+                        () => {
+                            this.clearEditState();
+                            this.render();
+                        },
+                    );
+                }
+            });
+            toolbar.append(cancel);
+        }
+
+        return toolbar;
+    }
+
+    renderHeaders() {
+        const thead = document.createElement("thead");
+
+        if (this.#editState) {
+            const th = document.createElement("th");
+            const check = document.createElement("input");
+            check.type = "checkbox";
+            check.checked =
+                this.#processedRows.length !== 0 &&
+                this.#processedRows.length === this.#selectedRows.length;
+            check.addEventListener("input", () => {
+                if (check.checked) {
+                    this.#selectedRows = this.#processedRows;
+                } else {
+                    this.#selectedRows = [];
+                }
+                this.render(true);
+            });
+            th.append(check);
+            thead.append(th);
+        }
         for (let c of this.#table.columns) {
             const ch = c.renderHeader();
             if (ch === null) continue;
             thead.append(ch);
         }
+
+        return thead;
+    }
+
+    appendAddedRows() {
+        if (this.#editState && this.#addedRows.length !== 0) {
+            this.#processedRows.push(...this.#addedRows);
+        }
     }
 
     sortRows() {
-        if (this.#sortState !== null && this.#sortState !== undefined) {
-            const sortColumn = this.#table.getColumn(
-                this.#sortState.columnName,
-            );
+        if (this.#sortState !== null) {
+            const { columnName, direction } = this.#sortState;
+            const sortColumn = this.#table.getColumn(columnName);
             this.#processedRows.sort((a, b) => {
-                let sign = this.#sortState.direction === "asc" ? 1 : -1;
-                return sign * sortColumn.compareValues(a, b);
+                const dirtyA = a.clone();
+                const dirtyB = b.clone();
+                if (this.checkDirtyUpdateState(dirtyA.id, columnName)) {
+                    const { newVal } = this.getDirtyUpdateValue(
+                        dirtyA.id,
+                        columnName,
+                    );
+                    dirtyA.setField(columnName, newVal);
+                }
+                if (this.checkDirtyUpdateState(dirtyB.id, columnName)) {
+                    const { newVal } = this.getDirtyUpdateValue(
+                        dirtyB.id,
+                        columnName,
+                    );
+                    dirtyB.setField(columnName, newVal);
+                }
+                const sign = direction === "asc" ? 1 : -1;
+                return sign * sortColumn.sort(dirtyA, dirtyB);
             });
         }
     }
 
     filterRows() {
-        if (Object.keys(this.#filterState).length !== 0) {
-            for (const columnName of Object.keys(this.#filterState)) {
-                const column = this.#table.getColumn(columnName);
-                this.#processedRows = this.#processedRows.filter((row) =>
-                    column.filter(row),
-                );
-            }
+        if (!this.hardDelete) {
+            this.#processedRows = this.#processedRows.filter((row) =>
+                row.getField("active"),
+            );
         }
+        if (this.#editState) {
+            this.#processedRows = this.#processedRows.filter(
+                (r) => !this.#removedRows.includes(r),
+            );
+        }
+        Object.keys(this.#filterState).forEach((columnName) => {
+            const column = this.#table.getColumn(columnName);
+            this.#processedRows = this.#processedRows.filter((row) => {
+                const dirtyRow = row.clone();
+                if (this.checkDirtyUpdateState(dirtyRow.id, columnName)) {
+                    const { newVal } = this.getDirtyUpdateValue(
+                        dirtyRow.id,
+                        columnName,
+                    );
+                    dirtyRow.setField(columnName, newVal);
+                }
+                return column.filter(dirtyRow);
+            });
+        });
     }
 
-    renderRows(tbody) {
+    renderRows() {
+        const tbody = document.createElement("tbody");
+
         if (this.#processedRows.length === 0) {
             const tr = document.createElement("tr");
             const td = document.createElement("td");
@@ -94,21 +329,87 @@ export class DataGrid {
             tbody.append(tr);
             return;
         }
+
         const start = this.#index * this.#size;
         const end = (this.#index + 1) * this.#size;
+
         this.#renderedRows = [];
+
         for (let i = start; i < end; ++i) {
             if (i >= this.#processedRows.length) break;
-            const r = this.#processedRows[i];
-            this.#renderedRows.push(r);
+
+            const row = this.#processedRows[i];
+
+            this.#renderedRows.push(row);
+
             const tr = document.createElement("tr");
-            for (let c of this.#table.columns) {
-                const td = c.renderCell(r.getField(c.name));
-                if (td === null) continue;
+
+            tr.classList.toggle(
+                "added-row",
+                this.#editState && this.#addedRows.includes(row),
+            );
+
+            if (this.#editState) {
+                const td = document.createElement("td");
+
+                td.isSelect = true;
+
+                const check = document.createElement("input");
+                check.type = "checkbox";
+                check.checked = this.#selectedRows.includes(row);
+                check.addEventListener("input", () => {
+                    if (check.checked) {
+                        this.#selectedRows.push(row);
+                    } else {
+                        this.#selectedRows = this.#selectedRows.filter(
+                            (rr) => rr !== row,
+                        );
+                    }
+                    this.render(true);
+                });
+
+                td.append(check);
+
                 tr.append(td);
             }
+
+            this.#table.columns
+                .filter((c) => !c.hidden)
+                .forEach((c) => {
+                    tr.append(c.renderCell(row));
+                });
             tbody.append(tr);
         }
+
+        if (this.#editState) {
+            tbody.addEventListener("click", (e) => {
+                const td = e.target.closest("td");
+                if (td === null) return;
+
+                if (
+                    this.#editingCell !== null &&
+                    this.#editingCell.rowId === td.rowId &&
+                    this.#editingCell.columnName === td.columnName
+                ) {
+                    return;
+                }
+
+                if (td.isSelect) {
+                    return;
+                }
+
+                if (!this.#table.getColumn(td.columnName).readOnly) {
+                    this.#editingCell = {
+                        rowId: td.rowId,
+                        columnName: td.columnName,
+                    };
+                }
+
+                this.render(true);
+            });
+        }
+
+        return tbody;
     }
 
     renderFooter() {
@@ -155,6 +456,11 @@ export class DataGrid {
                 this.setIndex(val);
             }
         });
+        index.addEventListener("beforeinput", (e) => {
+            if (e.data === ".") {
+                e.preventDefault();
+            }
+        });
         if (pagesCount === 0) {
             index.value = 0;
             index.disabled = true;
@@ -199,6 +505,11 @@ export class DataGrid {
                 this.setPageSize(val);
             }
         });
+        size.addEventListener("beforeinput", (e) => {
+            if (e.data === ".") {
+                e.preventDefault();
+            }
+        });
         if (totalLength === 0) {
             size.value = 0;
             size.disabled = true;
@@ -220,6 +531,26 @@ export class DataGrid {
         return footer;
     }
 
+    checkDirtyUpdateState(rowId, columnName) {
+        if (!this.#editState || this.#dirtyRows.length === 0) {
+            return false;
+        }
+        const dirtyValue = this.getDirtyUpdateValue(rowId, columnName);
+        return dirtyValue !== undefined;
+    }
+
+    getDirtyUpdateValue(rowId, columnName) {
+        const dirtyRow = this.#dirtyRows.find((d) => d.rowId === rowId);
+        if (dirtyRow === undefined) {
+            return undefined;
+        }
+        const value = dirtyRow.values.find((v) => v.columnName === columnName);
+        if (value === undefined) {
+            return undefined;
+        }
+        return value;
+    }
+
     extractRows(data) {
         if (!Array.isArray(data)) {
             throw new TypeError("An error happended while parsing the data.");
@@ -229,31 +560,51 @@ export class DataGrid {
             if (row.id === undefined) {
                 throw new Error("Data rows have no id's.");
             }
-            this.#rows.push(new DataRow(row));
+            this.#rows.push(new DataRow(row, this.hardDelete));
         }
     }
 
     setSortState(sortState) {
         this.#sortState = sortState;
-        this.render();
+        this.render(true);
+    }
+
+    get editState() {
+        return this.#editState;
+    }
+
+    get hardDelete() {
+        return this.#table.hardDelete;
     }
 
     get sortState() {
         return this.#sortState;
     }
 
-    get filterState() {
-        return this.#filterState;
+    get editingCell() {
+        return this.#editingCell;
     }
 
     appendFilterConfig(columnName, filterConfig) {
+        this.clearCellEditingState();
+        this.#selectedRows = [];
         this.#filterState[columnName] = filterConfig;
         this.#index = 0;
         this.render();
     }
 
     removeFilterConfig(columnName) {
+        this.clearCellEditingState();
+        this.#selectedRows = [];
         delete this.#filterState[columnName];
+        this.#index = 0;
+        this.render();
+    }
+
+    clearFilterState() {
+        this.clearCellEditingState();
+        this.#selectedRows = [];
+        this.#filterState = {};
         this.#index = 0;
         this.render();
     }
@@ -273,6 +624,221 @@ export class DataGrid {
         this.#index = 0;
         this.render();
     }
+
+    toggleEditMode(state) {
+        this.#editState = state;
+        this.#index = 0;
+        this.render();
+    }
+
+    showModal(content, label, handler, validate = () => true) {
+        const modal = document.createElement("dialog");
+        modal.className = "modal";
+
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "content";
+        contentDiv.append(content);
+
+        const btnDiv = document.createElement("div");
+        btnDiv.className = "buttons";
+
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.className = "cancel-btn";
+        cancel.append("Cancel");
+        cancel.addEventListener("click", () => {
+            modal.close();
+            modal.remove();
+        });
+
+        const confirm = document.createElement("button");
+        confirm.type = "button";
+        confirm.className = "confirm-btn";
+        confirm.disabled = !validate();
+        confirm.append(label);
+        confirm.addEventListener("click", () => {
+            modal.close();
+            modal.remove();
+            handler();
+        });
+
+        contentDiv.addEventListener("input", () => {
+            confirm.disabled = !validate();
+        });
+
+        btnDiv.append(cancel, confirm);
+
+        modal.append(contentDiv, btnDiv);
+
+        document.body.append(modal);
+
+        modal.showModal();
+    }
+
+    commitUpdate(rowId, columnName, oldVal, newVal) {
+        const column = this.#table.getColumn(columnName);
+
+        const addedRow = this.#addedRows.find((r) => r.id === rowId);
+
+        if (addedRow !== undefined) {
+            addedRow.setField(columnName, newVal);
+        } else {
+            let dirtyRow = this.#dirtyRows.find((d) => d.rowId === rowId);
+
+            if (dirtyRow === undefined) {
+                dirtyRow = { rowId, values: [] };
+                this.#dirtyRows.push(dirtyRow);
+            }
+
+            let value = dirtyRow.values.find(
+                (v) => v.columnName === columnName,
+            );
+
+            if (value === undefined) {
+                if (!column.compare(oldVal, newVal)) {
+                    value = { columnName, oldVal, newVal };
+                    dirtyRow.values.push(value);
+                }
+            } else {
+                if (column.compare(value.oldVal, newVal)) {
+                    dirtyRow.values = dirtyRow.values.filter(
+                        (v) => v !== value,
+                    );
+                } else {
+                    value.newVal = newVal;
+                }
+            }
+            if (dirtyRow.values.length === 0) {
+                this.#dirtyRows = this.#dirtyRows.filter((d) => d !== dirtyRow);
+            }
+        }
+
+        this.clearCellEditingState();
+        this.render(true);
+    }
+
+    commitRemoval() {
+        const selectedAddedRows = this.#selectedRows.filter((r) =>
+            this.#addedRows.includes(r),
+        );
+
+        this.#addedRows = this.#addedRows.filter(
+            (r) => !selectedAddedRows.includes(r),
+        );
+
+        this.#selectedRows = this.#selectedRows.filter(
+            (r) => !selectedAddedRows.includes(r),
+        );
+
+        this.#removedRows.push(...this.#selectedRows);
+
+        this.#selectedRows.forEach((r) => {
+            this.#dirtyRows = this.#dirtyRows.filter((d) => d.rowId !== r.id);
+        });
+
+        this.#selectedRows = [];
+        this.render();
+    }
+
+    commitAdd(row) {
+        this.#addedRows.push(row);
+        this.render();
+    }
+
+    applyChanges() {
+        const changes = [];
+
+        changes.push(
+            ...this.#dirtyRows.map((d) => ({ operation: "update", ...d })),
+        );
+
+        if (this.hardDelete) {
+            changes.push(
+                ...this.#removedRows.map((r) => ({
+                    operation: "delete",
+                    rowId: r.id,
+                })),
+            );
+        } else {
+            changes.push(
+                ...this.#removedRows.map((r) => ({
+                    operation: "update",
+                    rowId: r.id,
+                    values: [
+                        { columnName: "active", oldVal: true, newVal: false },
+                    ],
+                })),
+            );
+        }
+
+        changes.push(
+            ...this.#addedRows.map((r) => ({
+                operation: "add",
+                rowId: r.id,
+                values: this.#table.columns.map((c) => ({
+                    columnName: c.name,
+                    value: r.getField(c.name),
+                })),
+            })),
+        );
+
+        this.#dirtyRows.forEach((d) => {
+            const r = this.#rows.find((rr) => rr.id === d.rowId);
+            d.values.forEach(({ columnName, oldVal, newVal }) => {
+                r.setField(columnName, newVal);
+            });
+        });
+
+        if (this.hardDelete) {
+            this.#rows = this.#rows.filter(
+                (r) => !this.#removedRows.includes(r),
+            );
+        } else {
+            this.#removedRows.forEach((r) => {
+                r.setField("active", false);
+            });
+        }
+
+        this.#rows.push(...this.#addedRows);
+
+        const changesCount = changes.length;
+
+        if (changesCount !== 0) {
+            this.dispatchEvent(new CustomEvent("save", { detail: changes }));
+        }
+
+        this.clearEditState();
+        this.render();
+    }
+
+    clearCellEditingState() {
+        this.#editingCell = null;
+        this.#editingCellInput = null;
+    }
+
+    clearEditState() {
+        this.#dirtyRows = [];
+        this.#editState = false;
+        this.#addedRows = [];
+        this.#selectedRows = [];
+        this.#removedRows = [];
+        this.clearCellEditingState();
+    }
+
+    setEditingCellInput(input) {
+        this.#editingCellInput = input;
+    }
+
+    getNewRow() {
+        const row = {};
+        row.id = crypto.randomUUID();
+
+        this.#table.columns.forEach((c) => {
+            row[c.name] = c.defaultValue;
+        });
+
+        return new DataRow(row, this.hardDelete);
+    }
 }
 
 class Table {
@@ -280,16 +846,29 @@ class Table {
     #name;
     #label;
     #readonly;
+    #hardDelete;
     #columns = [];
 
     constructor(config, grid) {
         this.#grid = grid;
         this.#name = config.tableName;
         this.#label = config.tableLabel;
-        this.#readonly = config.readOnly || false;
+        this.#readonly = config.readOnly ?? false;
+        this.#hardDelete = config.hardDelete ?? false;
 
         for (let i = 0; i < config.columns.length; ++i) {
             this.#columns.push(this.columnFactory(config.columns[i]));
+        }
+
+        if (!this.#hardDelete) {
+            this.#columns.push(
+                new BooleanColumn({
+                    columnName: "active",
+                    columnLabel: "Active",
+                    columnType: "boolean",
+                    hidden: true,
+                }),
+            );
         }
     }
 
@@ -326,6 +905,14 @@ class Table {
         return this.#columns;
     }
 
+    get hardDelete() {
+        return this.#hardDelete;
+    }
+
+    get readOnly() {
+        return this.#readonly;
+    }
+
     getColumn(columnName) {
         const column = this.#columns.find((c) => c.name === columnName);
         return column;
@@ -340,6 +927,7 @@ class Column {
     #readOnly;
     #searchable;
     #hidden;
+    #required;
     #filterElements;
 
     constructor(columnConfig, grid) {
@@ -347,9 +935,10 @@ class Column {
         this.#name = columnConfig.columnName;
         this.#label = columnConfig.columnLabel;
         this.#type = columnConfig.columnType;
-        this.#readOnly = columnConfig.readOnly || false;
-        this.#searchable = columnConfig.searchable !== false;
-        this.#hidden = columnConfig.hidden || false;
+        this.#readOnly = columnConfig.readOnly ?? false;
+        this.#searchable = columnConfig.searchable ?? true;
+        this.#hidden = columnConfig.hidden ?? false;
+        this.#required = columnConfig.required ?? false;
     }
 
     get name() {
@@ -370,6 +959,14 @@ class Column {
 
     get hidden() {
         return this.#hidden;
+    }
+
+    get required() {
+        return this.#required;
+    }
+
+    get readOnly() {
+        return this.#readOnly;
     }
 
     get grid() {
@@ -418,7 +1015,7 @@ class Column {
             }
             filter.addEventListener("click", () => {
                 const overlay = document.createElement("div");
-                overlay.className = "overlay";
+                overlay.className = "filter-overlay";
 
                 const dialog = this.renderFilterDialog(overlay);
 
@@ -449,11 +1046,122 @@ class Column {
         return "data-cell";
     }
 
-    renderCell(value) {
+    get defaultValue() {
+        return "";
+    }
+
+    renderCell(row) {
         if (this.#hidden) return null;
+
         const td = document.createElement("td");
+
+        td.rowId = row.id;
+        td.columnName = this.name;
+
         td.className = this.cellClass;
+
+        let cellValue = row.getField(this.name);
+
+        if (this.#grid.editState) {
+            if (this.#grid.checkDirtyUpdateState(row.id, this.name)) {
+                cellValue = this.#grid.getDirtyUpdateValue(
+                    row.id,
+                    this.name,
+                ).newVal;
+                td.classList.add("dirty-cell");
+            }
+            if (
+                this.#grid.editingCell !== null &&
+                this.#grid.editingCell.rowId === row.id &&
+                this.#grid.editingCell.columnName === this.name
+            ) {
+                td.classList.add("editing-cell");
+                const input = this.renderInputField(cellValue);
+
+                this.#grid.setEditingCellInput(input);
+
+                if (input !== undefined) {
+                    const tryCommit = () => {
+                        const value = this.getInputValue(input);
+                        if (this.isValidInput(value)) {
+                            this.#grid.commitUpdate(
+                                row.id,
+                                this.name,
+                                row.getField(this.name),
+                                value,
+                            );
+                        }
+                    };
+
+                    input.addEventListener("blur", (e) => {
+                        if (this.isPartOfInputField(input, e.relatedTarget)) {
+                            return;
+                        }
+                        tryCommit();
+                    });
+
+                    input.addEventListener("keydown", (e) => {
+                        if (e.key === "Enter") tryCommit();
+                    });
+
+                    td.classList.toggle(
+                        "wrong-input",
+                        !this.isValidInput(this.getInputValue(input)),
+                    );
+
+                    input.addEventListener("input", () => {
+                        td.classList.toggle(
+                            "wrong-input",
+                            !this.isValidInput(this.getInputValue(input)),
+                        );
+                    });
+                }
+
+                td.append(input);
+            } else {
+                td.classList.toggle("edit-mode-cell", !this.#readOnly);
+                td.append(this.renderData(cellValue));
+            }
+        } else {
+            td.append(this.renderData(cellValue));
+        }
+
         return td;
+    }
+
+    renderData(value) {
+        return value;
+    }
+
+    renderInputField(value) {
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = input;
+        return input;
+    }
+
+    isPartOfInputField(input, element) {
+        return input.contains(element);
+    }
+
+    isValidInput(value) {
+        return !this.#required || !this.isEmpty(value);
+    }
+
+    isEmpty(value) {
+        return value === "";
+    }
+
+    parseValue(value) {
+        return value;
+    }
+
+    getInputValue(input) {
+        return this.parseValue(input.value);
+    }
+
+    compare(a, b) {
+        return a === b;
     }
 
     renderFilterDialog(overlay) {
@@ -547,7 +1255,7 @@ class Column {
         return config;
     }
 
-    compareValues(a, b) {
+    sort(a, b) {
         return a.getField(this.name) - b.getField(this.name);
     }
 
@@ -569,14 +1277,22 @@ class TextColumn extends Column {
         super(columnConfig, grid);
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
-        td.append(String(value) || "");
-        return td;
+    renderData(value) {
+        return String(value) ?? "";
     }
 
-    compareValues(a, b) {
+    renderInputField(value) {
+        const text = document.createElement("input");
+        text.type = "text";
+        text.value = value;
+        return text;
+    }
+
+    isValidInput(value) {
+        return super.isValidInput(value);
+    }
+
+    sort(a, b) {
         const as = a.getField(this.name);
         const bs = b.getField(this.name);
         return as.localeCompare(bs);
@@ -699,25 +1415,37 @@ class DateColumn extends Column {
 
     constructor(columnConfig, grid) {
         super(columnConfig, grid);
-        this.#default =
-            columnConfig.default === undefined ? "today" : columnConfig.default;
+        this.#default = columnConfig.default ?? "today";
     }
 
-    getDefaultDate() {
-        if (this.#default === "today") {
-            return new Date();
-        }
-        return new Date(this.#default);
+    get defaultValue() {
+        const date =
+            this.#default === "today" ? new Date() : new Date(this.#default);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
-        td.append(String(value) || "");
-        return td;
+    renderData(value) {
+        return String(value) ?? "";
     }
 
-    compareValues(a, b) {
+    renderInputField(value) {
+        const date = document.createElement("input");
+        date.type = "date";
+        date.value = value;
+        return date;
+    }
+
+    isValidInput(value) {
+        return (
+            super.isValidInput(value) &&
+            (value === "" || !Number.isNaN(new Date(value).getTime()))
+        );
+    }
+
+    sort(a, b) {
         return (
             new Date(a.getField(this.name)) - new Date(b.getField(this.name))
         );
@@ -845,6 +1573,12 @@ class DateColumn extends Column {
             }
         }
     }
+
+    compare(a, b) {
+        const ad = new Date(a);
+        const bd = new Date(b);
+        return ad.getTime() === bd.getTime();
+    }
 }
 
 class DecimalColumn extends Column {
@@ -863,11 +1597,69 @@ class DecimalColumn extends Column {
         return "numeric-cell";
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
-        td.append(value.toFixed(this.#places) || "");
-        return td;
+    get defaultValue() {
+        return 0;
+    }
+
+    renderData(value) {
+        return value === "" ? "" : Number(value).toFixed(this.#places);
+    }
+
+    renderInputField(value) {
+        const num = document.createElement("input");
+        num.type = "number";
+
+        if (this.#min !== null) {
+            num.min = this.#min;
+        }
+
+        if (this.#max !== null) {
+            num.max = this.#max;
+        }
+
+        num.step = Math.pow(10, -this.#places);
+
+        num.value = value;
+
+        this.grid.setEditingCellInput(num);
+
+        if (this.#places === 0) {
+            num.addEventListener("beforeinput", (e) => {
+                if (e.data === ".") {
+                    e.preventDefault();
+                }
+            });
+        } else {
+            num.addEventListener("input", () => {
+                const input = num;
+                if (input.value.includes(".")) {
+                    const [intPart, decPart] = input.value.split(".");
+                    if (decPart.length > this.#places) {
+                        input.value =
+                            intPart + "." + decPart.slice(0, this.#places);
+                    }
+                }
+            });
+        }
+
+        return num;
+    }
+
+    isEmpty(value) {
+        return !this.required || value !== 0;
+    }
+
+    isValidInput(value) {
+        return (
+            super.isValidInput(value) &&
+            !Number.isNaN(Number(value)) &&
+            (this.#min === null || Number(value) >= this.#min) &&
+            (this.#max === null || Number(value) <= this.#max)
+        );
+    }
+
+    parseValue(value) {
+        return value === "" ? null : Number(value);
     }
 
     renderFilterControl() {
@@ -900,9 +1692,9 @@ class DecimalColumn extends Column {
             num1.max = this.#max;
         }
         if (this.#places === 0) {
-            num1.addEventListener("beforeinput", (event) => {
-                if (event.data === ".") {
-                    event.preventDefault();
+            num1.addEventListener("beforeinput", (e) => {
+                if (e.data === ".") {
+                    e.preventDefault();
                 }
             });
         } else {
@@ -987,8 +1779,8 @@ class DecimalColumn extends Column {
     get filterConfig() {
         return {
             operator: this.filterElements.select.value,
-            value: this.filterElements.num1.value,
-            maxValue: this.filterElements.num2.value,
+            value: this.parseValue(this.filterElements.num1.value),
+            maxValue: this.parseValue(this.filterElements.num2.value),
         };
     }
 
@@ -997,48 +1789,49 @@ class DecimalColumn extends Column {
         if (operator === "b") {
             return (
                 value !== "" &&
-                Number(value) >= this.#min &&
-                Number(value) <= this.#max &&
+                (this.#min === null || Number(value) >= this.#min) &&
+                (this.#max === null || Number(value) <= this.#max) &&
                 maxValue !== "" &&
-                Number(maxValue) >= this.#min &&
-                Number(maxValue) <= this.#max &&
+                (this.#min === null || Number(maxValue) >= this.#min) &&
+                (this.#max === null || Number(maxValue) <= this.#max) &&
                 Number(value) < Number(maxValue)
             );
         } else {
             return (
                 value !== "" &&
-                Number(value) >= this.#min &&
-                Number(value) <= this.#max
+                (this.#min === null || Number(value) >= this.#min) &&
+                (this.#max === null || Number(value) <= this.#max)
             );
         }
     }
 
     filter(row) {
-        const n = row.getField(this.name);
+        const number = this.parseValue(row.getField(this.name));
+        if (number === null) {
+            return false;
+        }
         const { operator, value, maxValue } = this.grid.getColumnFilterConfig(
             this.name,
         );
-        const v = Number(value);
-        const mv = maxValue === "" ? null : Number(maxValue);
 
         switch (operator) {
             case "e": {
-                return n === v;
+                return number === value;
             }
             case "b": {
-                return n >= v && n <= mv;
+                return number >= value && number <= maxValue;
             }
             case "g": {
-                return n > v;
+                return number > value;
             }
             case "l": {
-                return n < v;
+                return number < value;
             }
             case "ge": {
-                return n >= v;
+                return number >= value;
             }
             case "le": {
-                return n <= v;
+                return number <= value;
             }
             default: {
                 return true;
@@ -1065,11 +1858,31 @@ class SelectColumn extends Column {
         this.#optionList = columnConfig.optionList;
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
-        td.append(this.getOptionLabel(value));
-        return td;
+    renderData(value) {
+        return this.getOptionLabel(this.getOption(value));
+    }
+
+    renderInputField(value) {
+        const select = document.createElement("select");
+
+        select.innerHTML = `<option value=""></option>`;
+
+        const optionList = [...this.optionList];
+
+        select.append(
+            ...optionList
+                .sort((a, b) => a.optionIndex - b.optionIndex)
+                .map((o) => {
+                    const option = document.createElement("option");
+                    option.value = o.optionValue;
+                    option.textContent = this.getOptionLabel(o);
+                    return option;
+                }),
+        );
+
+        select.value = value;
+
+        return select;
     }
 
     get optionType() {
@@ -1084,28 +1897,32 @@ class SelectColumn extends Column {
         return this.#optionList;
     }
 
-    getOptionLabel(value) {
-        const option = this.getOption(value);
-        if (option === undefined || option.optionLabel === undefined) return "";
+    getOptionLabel(option) {
+        if (option === null) return "";
         return option.optionLabel;
     }
 
     getOption(value) {
-        return this.#optionList.find((o) => o.optionValue === value);
+        return this.#optionList.find((o) => o.optionValue === value) ?? null;
     }
 
     getOptionList(values) {
         if (!Array.isArray(values)) return [];
-        const list = [];
-        for (let v of values) {
-            list.push(this.getOption(v));
-        }
-        return list;
+        if (values === "") return [];
+        return values
+            .map((v) => {
+                const o = this.getOption(v);
+                return o;
+            })
+            .filter((o) => o !== null);
     }
 
-    compareValues(a, b) {
+    sort(a, b) {
         const ao = this.getOption(a.getField(this.name));
         const bo = this.getOption(b.getField(this.name));
+        if (ao === null && bo === null) return 0;
+        if (ao === null) return -1;
+        if (bo === null) return 1;
         return ao.optionIndex - bo.optionIndex;
     }
 
@@ -1152,7 +1969,7 @@ class SelectColumn extends Column {
             radio.type = "radio";
             radio.name = this.name;
             radio.value = opt.optionValue;
-            label.append(radio, opt.optionLabel);
+            label.append(radio, this.getOptionLabel(opt));
             radios.push(radio);
             radiosContainer.append(label);
             if (
@@ -1177,7 +1994,7 @@ class SelectColumn extends Column {
             const checkbox = document.createElement("input");
             checkbox.type = "checkbox";
             checkbox.value = opt.optionValue;
-            label.append(checkbox, opt.optionLabel);
+            label.append(checkbox, this.getOptionLabel(opt));
             checkboxes.push(checkbox);
             checkboxesContainer.append(label);
             if (
@@ -1289,24 +2106,109 @@ class MultiSelectColumn extends SelectColumn {
         super(columnConfig, grid);
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
-        if (!Array.isArray(value)) return td;
-        const options = this.getOptionList(value);
-        options.sort((a, b) => a.optionIndex - b.optionIndex);
-        td.append(
-            options.reduce((s, o) => {
-                let l = this.getOptionLabel(o.optionValue);
-                if (s !== "" && l !== "") s += ", ";
-                s += l;
-                return s;
-            }, ""),
-        );
-        return td;
+    renderData(value) {
+        return this.formatList(value);
     }
 
-    compareValues(a, b) {
+    formatList(list) {
+        if (!Array.isArray(list)) return "";
+        const options = this.getOptionList(list);
+        options.sort((a, b) => a.optionIndex - b.optionIndex);
+        if (options.length === 0) return "";
+
+        return options.reduce((s, o) => {
+            let l = this.getOptionLabel(o);
+            if (s !== "" && l !== "") s += ", ";
+            s += l;
+            return s;
+        }, "");
+    }
+
+    renderInputField(value) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.append(this.formatList(value));
+        button.addEventListener("click", () => {
+            const container = button.closest("dialog") ?? document.body;
+            container.append(overlay, dialog);
+            dialog.show();
+
+            const rect = button.getBoundingClientRect();
+            dialog.style.top = rect.bottom + "px";
+            dialog.style.left = rect.left + "px";
+            dialog.style.width = rect.width + "px";
+        });
+
+        const dialog = document.createElement("dialog");
+        dialog.className = "multiselect-edit-options";
+
+        const overlay = document.createElement("div");
+        overlay.className = "filter-overlay";
+
+        dialog.addEventListener("mousedown", (e) => {
+            if (e.target.tagName !== "INPUT") {
+                e.preventDefault();
+            }
+        });
+
+        const optionList = [...this.optionList];
+        optionList.sort((a, b) => a.optionIndex - b.optionIndex);
+        optionList.forEach((o) => {
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = o.optionValue;
+            checkbox.checked = value?.includes(o.optionValue) ?? false;
+            label.append(checkbox, this.getOptionLabel(o));
+            label.addEventListener("click", (e) => {
+                if (e.target === checkbox) return;
+                e.preventDefault();
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+
+            dialog.append(label);
+        });
+
+        dialog.addEventListener("input", () => {
+            button.replaceChildren(this.formatList(this.getInputValue(button)));
+            button.dispatchEvent(new Event("input"));
+        });
+
+        overlay.addEventListener("click", () => {
+            dialog.close();
+            dialog.remove();
+            overlay.remove();
+            button.focus();
+        });
+
+        button.dialog = dialog;
+
+        return button;
+    }
+
+    isPartOfInputField(input, element) {
+        return (
+            input.contains(element) ||
+            (input.dialog?.contains(element) ?? false)
+        );
+    }
+
+    getInputValue(input) {
+        return [...input.dialog.querySelectorAll("input:checked")].map(
+            (cb) => cb.value,
+        );
+    }
+
+    isEmpty(value) {
+        return value.length === 0;
+    }
+
+    get defaultValue() {
+        return [];
+    }
+
+    sort(a, b) {
         const aol = this.getOptionList(a.getField(this.name));
         aol.sort((aa, bb) => aa.optionIndex - bb.optionIndex);
 
@@ -1321,6 +2223,22 @@ class MultiSelectColumn extends SelectColumn {
         }
 
         return 0;
+    }
+
+    compare(a, b) {
+        const aol = this.getOptionList(a);
+        aol.sort((aa, bb) => aa.optionIndex - bb.optionIndex);
+        const bol = this.getOptionList(b);
+        bol.sort((aa, bb) => aa.optionIndex - bb.optionIndex);
+        if (aol.length !== bol.length) {
+            return false;
+        }
+        for (let i = 0; i < aol.length; ++i) {
+            if (aol[i] !== bol[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     renderFilterControl() {
@@ -1430,17 +2348,30 @@ class BooleanColumn extends Column {
         super(columnConfig, grid);
     }
 
-    renderCell(value) {
-        const td = super.renderCell(value);
-        if (td === null) return null;
+    renderData(value) {
         const toggle = document.createElement("span");
         toggle.className = "toggle";
         toggle.classList.toggle("on", value);
         const knob = document.createElement("span");
         knob.className = "toggle-knob";
         toggle.append(knob);
-        td.append(toggle);
-        return td;
+        return toggle;
+    }
+
+    renderInputField(value) {
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = value;
+        checkbox.className = "toggle-checkbox";
+        return checkbox;
+    }
+
+    getInputValue(input) {
+        return input.checked;
+    }
+
+    get defaultValue() {
+        return true;
     }
 
     renderFilterControl() {
@@ -1477,10 +2408,13 @@ class DataRow {
     #id;
     #fields = {};
 
-    constructor(row) {
+    constructor(row, hardDelete) {
         const { id, ...rest } = row;
         this.#id = id;
         this.#fields = rest;
+        if (!hardDelete && this.#fields.active === undefined) {
+            this.#fields.active = true;
+        }
     }
 
     get id() {
@@ -1492,5 +2426,14 @@ class DataRow {
             return "";
         }
         return this.#fields[column];
+    }
+
+    setField(columnName, value) {
+        this.#fields[columnName] = value;
+    }
+
+    clone() {
+        const copy = new DataRow({ id: this.#id, ...this.#fields });
+        return copy;
     }
 }

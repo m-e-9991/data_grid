@@ -9,7 +9,7 @@
     <body>
         <div id="grid-container"></div>
         <script type="module">
-            import { DataGrid } from "./dataGrid.js";
+            import { DataGrid } from "./modules/dataGrid.js";
 
             const container = document.getElementById("grid-container");
 
@@ -31,12 +31,15 @@
                 }
             }
 
+            const onSave = (changes) => {};
+
             const config = await loadConfig();
             const data = await loadData();
             const dataGrid = new DataGrid({
                 container,
                 config,
-                data
+                data,
+                onSave
             });
         </script>
     </body>

@@ -1,7 +1,7 @@
 [
     {
         "id": 1,
-        "text": "Row 1 text",
+        "text": "Hello World",
         "date": "2025-10-16",
         "decimal": 22.27,
         "integer": -2,
@@ -9,9 +9,9 @@
         "multiSelect": [
             "3"
         ],
-        "boolean": true,
+        "boolean": false,
         "hiddenColumn": "hidden 1",
-        "unsearchableColumn": "unsearchable 1",
+        "unsearchableColumn": "Hello World",
         "uneditableColumn": "locked 1"
     },
     {
@@ -25,7 +25,8 @@
         "boolean": true,
         "hiddenColumn": "hidden 2",
         "unsearchableColumn": "unsearchable 2",
-        "uneditableColumn": "locked 2"
+        "uneditableColumn": "locked 2",
+        "active": false
     },
     {
         "id": 3,
@@ -42,7 +43,8 @@
         "boolean": true,
         "hiddenColumn": "hidden 3",
         "unsearchableColumn": "unsearchable 3",
-        "uneditableColumn": "locked 3"
+        "uneditableColumn": "locked 3",
+        "active": false
     },
     {
         "id": 4,
@@ -57,7 +59,8 @@
         "boolean": false,
         "hiddenColumn": "hidden 4",
         "unsearchableColumn": "unsearchable 4",
-        "uneditableColumn": "locked 4"
+        "uneditableColumn": "locked 4",
+        "active": false
     },
     {
         "id": 5,
@@ -73,7 +76,8 @@
         "boolean": true,
         "hiddenColumn": "hidden 5",
         "unsearchableColumn": "unsearchable 5",
-        "uneditableColumn": "locked 5"
+        "uneditableColumn": "locked 5",
+        "active": false
     },
     {
         "id": 6,
@@ -89,7 +93,8 @@
         "boolean": true,
         "hiddenColumn": "hidden 6",
         "unsearchableColumn": "unsearchable 6",
-        "uneditableColumn": "locked 6"
+        "uneditableColumn": "locked 6",
+        "active": false
     },
     {
         "id": 7,
@@ -102,7 +107,8 @@
         "boolean": false,
         "hiddenColumn": "hidden 7",
         "unsearchableColumn": "unsearchable 7",
-        "uneditableColumn": "locked 7"
+        "uneditableColumn": "locked 7",
+        "active": false
     },
     {
         "id": 8,
@@ -118,7 +124,8 @@
         "boolean": true,
         "hiddenColumn": "hidden 8",
         "unsearchableColumn": "unsearchable 8",
-        "uneditableColumn": "locked 8"
+        "uneditableColumn": "locked 8",
+        "active": false
     },
     {
         "id": 9,
@@ -919,5 +926,23 @@
         "hiddenColumn": "hidden 60",
         "unsearchableColumn": "unsearchable 60",
         "uneditableColumn": "locked 60"
+    },
+    {
+        "id": "7185def8-0345-48b3-9caa-e426cf126f4e",
+        "text": "Hello World",
+        "date": "2005-02-24",
+        "decimal": 3.14,
+        "integer": 1,
+        "select": "3",
+        "multiSelect": [
+            "1",
+            "2",
+            "3"
+        ],
+        "boolean": true,
+        "hiddenColumn": "",
+        "unsearchableColumn": "Hello World",
+        "uneditableColumn": "Hello World",
+        "active": true
     }
 ]

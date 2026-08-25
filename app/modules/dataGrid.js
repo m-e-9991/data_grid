@@ -911,7 +911,7 @@ export class DataGrid {
 
         this.#dirtyRows.forEach((d) => {
             const r = this.#rows.find((rr) => rr.id === d.rowId);
-            d.values.forEach(({ columnName, oldVal, newVal }) => {
+            d.values.forEach(({ columnName, newVal }) => {
                 r.setField(columnName, newVal);
             });
         });
